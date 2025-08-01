@@ -1,14 +1,8 @@
-import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
-import LandingPage from "./pages/LandingPage";
+import { RouterProvider } from "react-router-dom";
+import root from "./routes";
 
-export default function App() {
-  return (
-    <BrowserRouter>
-      <Routes>
-        <Route path="/" element={<LandingPage />} />
-        {/* 없는 경로는 루트로 리다이렉트 */}
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-    </BrowserRouter>
-  );
+function App() {
+  return <RouterProvider router={root} />;
 }
+
+export default App;
