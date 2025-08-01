@@ -2,6 +2,7 @@ import { createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import courseRouter from "./courseRouter";
 import accountRouter from "./accountRouter";
+import mypageRouter from "./mypageRouter";
 import LoadingPage from "../pages/common/LoadingPage";
 import NotFoundPage from "../pages/common/NotFoundPage";
 
@@ -23,6 +24,10 @@ const root = createBrowserRouter([
   {
     path: "account",
     children: accountRouter(),
+  },
+  {
+    path: "mypage",
+    children: mypageRouter(),
   },
   {
     path: "*",
