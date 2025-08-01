@@ -1,10 +1,11 @@
 import { lazy, Suspense } from "react";
 import LoadingPage from "../pages/common/LoadingPage";
 
-const BackendPage = lazy(() => import("../pages/Courses/BackendPage"));
-const DataAIPage = lazy(() => import("../pages/Courses/DataAIPage"));
-const FrontendPage = lazy(() => import("../pages/Courses/FrontendPage"));
-const FullStackPage = lazy(() => import("../pages/Courses/FullStackPage"));
+const BackendPage = lazy(() => import("../pages/courses/BackendPage"));
+const DataAIPage = lazy(() => import("../pages/courses/DataAIPage"));
+const FrontendPage = lazy(() => import("../pages/courses/FrontendPage"));
+const FullStackPage = lazy(() => import("../pages/courses/FullStackPage"));
+const PaymentPage = lazy(() => import("../pages/courses/PaymentPage"));
 
 export default function courseRouter() {
   return [
@@ -37,6 +38,14 @@ export default function courseRouter() {
       element: (
         <Suspense fallback={<LoadingPage />}>
           <FullStackPage />
+        </Suspense>
+      ),
+    },
+    {
+      path: "payment",
+      element: (
+        <Suspense fallback={<LoadingPage />}>
+          <PaymentPage />
         </Suspense>
       ),
     },

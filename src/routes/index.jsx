@@ -1,7 +1,9 @@
 import { createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import courseRouter from "./courseRouter";
+import accountRouter from "./accountRouter";
 import LoadingPage from "../pages/common/LoadingPage";
+import NotFoundPage from "../pages/common/NotFoundPage";
 
 const LandingPage = lazy(() => import("../pages/LandingPage"));
 
@@ -19,8 +21,12 @@ const root = createBrowserRouter([
     children: courseRouter(),
   },
   {
+    path: "account",
+    children: accountRouter(),
+  },
+  {
     path: "*",
-    element: <div>404 Not Found</div>,
+    element: <NotFoundPage />,
   },
 ]);
 
