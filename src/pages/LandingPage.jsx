@@ -1,4 +1,3 @@
-import BasicLayout from "../layouts/BasicLayout";
 import mainHeadPc from "../assets/landing/main-head-pc.avif";
 
 export default function LandingPage() {

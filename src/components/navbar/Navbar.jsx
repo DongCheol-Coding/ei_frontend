@@ -2,6 +2,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Menu, X } from "lucide-react";
+import dc_logo from "../../assets/cd_logo.png";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
@@ -11,42 +12,55 @@ export default function Navbar() {
       <div className="max-w-8xl mx-auto px-10">
         <div className="flex items-center justify-between h-[54px]">
           {/* 로고 */}
-          <div className="flex-shrink-0">
+          <div className="flex-shrink-0 flex items-center space-x-2">
             <Link to="/">
-              <span className="font-bold text-xl">DONGCHEOL CODING</span>
+              <img
+                src={dc_logo}
+                alt="동철코딩 로고"
+                className="h-5 w-auto"
+                loading="lazy"
+              />
             </Link>
+            <div className="flex flex-col mx-4">
+              <span className="text-xs font-bold text-blue-700">
+                부트캠프 압도적
+              </span>
+              <span className="text-xs font-bold text-blue-700">
+                1위의 책임감*
+              </span>
+            </div>
           </div>
 
           {/* 데스크탑 메뉴 */}
           <div className="hidden md:flex items-center space-x-6">
             <Link
               to="/course/data"
-              className="text-sm font-lg px-3 py-2 hover:bg-gray-100 rounded"
+              className="text-lg font-medium text-gray-500 text-gray-600px-3 py-2 hover:bg-gray-100 rounded"
             >
               DATA/AI 부트캠프
             </Link>
             <Link
               to="/course/fullstack"
-              className="text-sm font-lg px-3 py-2 hover:bg-gray-100 rounded"
+              className="text-lg font-medium text-gray-500 px-3 py-2 hover:bg-gray-100 rounded"
             >
               풀스택 부트캠프
             </Link>
             <Link
               to="/course/frontend"
-              className="text-sm font-lg px-3 py-2 hover:bg-gray-100 rounded"
+              className="text-lg font-medium text-gray-500 px-3 py-2 hover:bg-gray-100 rounded"
             >
               프론트엔드 부트캠프
             </Link>
             <Link
               to="/course/backend"
-              className="text-sm font-lg px-3 py-2 hover:bg-gray-100 rounded"
+              className="text-lg font-medium text-gray-500 px-3 py-2 hover:bg-gray-100 rounded"
             >
               백엔드 부트캠프
             </Link>
           </div>
 
           {/* 오른쪽 버튼/링크 */}
-          <div className="hidden md:flex items-center space-x-3">
+          <div className="hidden md:flex items-center space-x-3 ml-60">
             <Link
               to="account/loginchoice"
               className="inline-block px-3 py-1.5 border border-gray-300 rounded-md text-xs font-medium bg-white text-black"
