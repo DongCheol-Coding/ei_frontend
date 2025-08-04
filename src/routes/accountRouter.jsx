@@ -6,6 +6,9 @@ const EmailSignUpPage = lazy(() => import("../pages/accounts/EmailSignUpPage"));
 const LoginLandingPage = lazy(() =>
   import("../pages/accounts/LoginLandingPage")
 );
+const SignUpLandingPage = lazy(() =>
+  import("../pages/accounts/SignUpLandingPage")
+);
 
 export default function accountRouter() {
   return [
@@ -26,10 +29,18 @@ export default function accountRouter() {
       ),
     },
     {
-      path: "",
+      path: "loginchoice",
       element: (
         <Suspense fallback={<LoadingPage />}>
           <LoginLandingPage />
+        </Suspense>
+      ),
+    },
+    {
+      path: "signupchoice",
+      element: (
+        <Suspense fallback={<LoadingPage />}>
+          <SignUpLandingPage />
         </Suspense>
       ),
     },

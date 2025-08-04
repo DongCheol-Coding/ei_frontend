@@ -1,5 +1,7 @@
+// src/routes/index.jsx
 import { createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
+import BasicLayout from "../layouts/BasicLayout";
 import courseRouter from "./courseRouter";
 import accountRouter from "./accountRouter";
 import mypageRouter from "./mypageRouter";
@@ -8,30 +10,35 @@ import NotFoundPage from "../pages/common/NotFoundPage";
 
 const LandingPage = lazy(() => import("../pages/LandingPage"));
 
+const withSuspense = (element) => (
+  <Suspense fallback={<LoadingPage />}>{element}</Suspense>
+);
+
 const root = createBrowserRouter([
   {
-    path: "",
-    element: (
-      <Suspense fallback={<LoadingPage />}>
-        <LandingPage />
-      </Suspense>
-    ),
-  },
-  {
-    path: "course",
-    children: courseRouter(),
-  },
-  {
-    path: "account",
-    children: accountRouter(),
-  },
-  {
-    path: "mypage",
-    children: mypageRouter(),
-  },
-  {
-    path: "*",
-    element: <NotFoundPage />,
+    element: <BasicLayout />, // 공통 레이아웃 적용
+    children: [
+      {
+        index: true, // "/" 라우트
+        element: withSuspense(<LandingPage />),
+      },
+      {
+        path: "course",
+        children: courseRouter(), // courseRouter 내부도 children 배열 반환한다고 가정
+      },
+      {
+        path: "account",
+        children: accountRouter(),
+      },
+      {
+        path: "mypage",
+        children: mypageRouter(),
+      },
+      {
+        path: "*",
+        element: <NotFoundPage />,
+      },
+    ],
   },
 ]);
 
