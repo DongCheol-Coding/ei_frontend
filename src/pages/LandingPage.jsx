@@ -1,4 +1,4 @@
-import mainHeadPc from "../assets/landing/main-head-pc.avif";
+import backgroundImg from "../assets/landing/main-head-pc.avif";
 
 export default function LandingPage() {
   return (
@@ -7,8 +7,8 @@ export default function LandingPage() {
       <section className="relative w-full h-[calc(100vh-98px)] flex items-center justify-center overflow-hidden">
         {/* 배경 이미지 */}
         <img
-          src={mainHeadPc}
-          alt="메인 헤더 배경"
+          src={backgroundImg}
+          alt="랜딩 페이지 배경"
           className="absolute inset-0 w-full h-full object-cover"
           loading="lazy"
         />
