@@ -1,7 +1,88 @@
+import backgroundImg from "../../assets/frontend/product-head-img-FE.png";
+import whiteCross from "../../assets/white-cross.svg";
+import priceUpBuble from "../../assets/frontend/price-up-bubble-FE.svg";
+
 export default function FrontendPage() {
   return (
-    <div>
-      <h1>프론트엔드 강의 소개 페이지</h1>
-    </div>
+    <section className="relative w-full h-[calc(100vh-98px)] flex flex-col items-center justify-center text-white">
+      {/* 1) 뒤 그라디언트 엘립스 */}
+      <div
+        className="
+            absolute inset-0 z-10
+            bg-gradient-to-t
+            from-[#2e34ba]
+            via-[#2e34ba]
+            to-[#1a2246]
+          "
+      />
+
+      {/* 2) 로고 형태 이미지 (크기 축소) */}
+      <img
+        src={backgroundImg}
+        alt="랜딩 페이지 배경"
+        loading="lazy"
+        className="
+            absolute
+            z-20
+            w-[400px]
+            h-auto
+            pointer-events-none
+            top-[45%] left-1/2 -translate-x-1/2 -translate-y-1/2
+            opacity-80 
+          "
+      />
+
+      {/* 3) 문구 및 버튼 */}
+      <div className="absolute z-30 flex flex-col items-center justify-center text-center p-4">
+        {/* 상단 텍스트 */}
+        <p className="text-sm md:text-base font-bold mb-2 tracking-wide mt-20 flex justify-center items-center">
+          <span style={{ color: "#7ee1ff" }}>개발자 부트캠프 1위 슈퍼코딩</span>
+          <img
+            src={whiteCross}
+            className="mx-2"
+            alt="흰색 십자가"
+            style={{ height: "0.8em" }}
+          />
+          <span style={{ color: "#5794ff" }}>취업률 1위 취업전문가</span>
+        </p>
+
+        {/* 메인 헤드라인 */}
+        <div className="mt-20">
+          <h1 className="text-7xl font-extrabold leading-tight mb-4 text-white">
+            <span style={{ color: "#7ee1ff" }}>개발자 취업 집사</span>
+            와 <br /> 공부부터 취업성공까지 <br /> 100% 보장
+          </h1>
+
+          {/* 서브 텍스트 */}
+          <p className="text-lg font-medium mt-10 mb-6">
+            더 이상 혼자 하지 마세요. <br /> 모든 과정을 개발자 취업집사가
+            함께합니다.
+          </p>
+        </div>
+
+        {/* CTA 버튼 */}
+        <div className="mt-18 flex flex-col items-center">
+          <img src={priceUpBuble} alt="Price Up Bubble" />
+          <button
+            className="font-bold py-4 px-20 rounded-xl shadow-lg transition-all focus:outline-none mt-2"
+            style={{ backgroundColor: "#7ee1ff", color: "#1A2246" }}
+          >
+            100% 보장 받고 시작하기
+          </button>
+        </div>
+
+        {/* 하단 각주 */}
+        <div className="text-[10px] text-gray-300 mt-8 max-w-2xl text-center">
+          <p>
+            * 개발자 부트캠프 1위 : 2023년 6월, 7월에 시작하는 온라인 웹개발
+            부트캠프 유료 수강생 수 합산 기준
+          </p>
+          <p>
+            (부트텐트 내 코딩 기업별 6,7월에 개강하는 부트캠프 상품 모집인원)
+          </p>
+          <p>* 취업률 1위 : M사 전국 지점 평균 취업률 1위, 취업자 수 1위</p>
+        </div>
+      </div>
+    </section>
   );
 }

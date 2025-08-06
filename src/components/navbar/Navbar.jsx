@@ -35,25 +35,25 @@ export default function Navbar() {
           <div className="hidden md:flex items-center space-x-6">
             <Link
               to="/course/data"
-              className="text-lg font-medium text-gray-500 text-gray-600px-3 py-2 hover:bg-gray-100 rounded"
+              className="text-lg font-medium text-gray-600 text-gray-600px-3 py-2 hover:bg-gray-100 rounded"
             >
               DATA/AI 부트캠프
             </Link>
             <Link
               to="/course/fullstack"
-              className="text-lg font-medium text-gray-500 px-3 py-2 hover:bg-gray-100 rounded"
+              className="text-lg font-medium text-gray-600 px-3 py-2 hover:bg-gray-100 rounded"
             >
               풀스택 부트캠프
             </Link>
             <Link
               to="/course/frontend"
-              className="text-lg font-medium text-gray-500 px-3 py-2 hover:bg-gray-100 rounded"
+              className="text-lg font-medium text-gray-600 px-3 py-2 hover:bg-gray-100 rounded"
             >
               프론트엔드 부트캠프
             </Link>
             <Link
               to="/course/backend"
-              className="text-lg font-medium text-gray-500 px-3 py-2 hover:bg-gray-100 rounded"
+              className="text-lg font-medium text-gray-600 px-3 py-2 hover:bg-gray-100 rounded"
             >
               백엔드 부트캠프
             </Link>
