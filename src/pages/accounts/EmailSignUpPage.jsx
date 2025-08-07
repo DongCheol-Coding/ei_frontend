@@ -42,194 +42,192 @@ export default function EmailSignUpPage() {
   };
 
   return (
-    <div className="flex items-center justify-center p-8">
-      <div className="bg-white border border-gray-200 shadow-sm p-5 w-full max-w-[400px]">
-        {/* 타이틀 */}
-        <h1 className="text-[40px] font-extrabold pb-2 mb-2">이메일로 가입</h1>
+    <div className="bg-white border border-gray-200 shadow-sm p-5 w-full max-w-[400px]">
+      {/* 타이틀 */}
+      <h1 className="text-[40px] font-extrabold pb-2 mb-2">이메일로 가입</h1>
 
-        <form className="space-y-2">
-          {/* 이메일 */}
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-gray-500 text-sm font-bold mb-1 "
-            >
-              이메일
-            </label>
-            <input
-              id="email"
-              type="email"
-              placeholder="이메일 주소를 입력해주세요."
-              className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* 비밀번호 */}
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-gray-500 text-sm font-bold mb-1"
-            >
-              비밀번호
-            </label>
-            <input
-              id="password"
-              type="password"
-              placeholder="특수문자, 숫자, 영문자 조합된 8 이상 문자"
-              className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* 비밀번호 확인 */}
-          <div>
-            <label
-              htmlFor="passwordConfirm"
-              className="block text-gray-500 text-sm font-bold mb-1"
-            >
-              비밀번호 확인
-            </label>
-            <input
-              id="passwordConfirm"
-              type="password"
-              placeholder="동일한 비밀번호를 다시 입력해주세요."
-              className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* 이름 */}
-          <div>
-            <label
-              htmlFor="name"
-              className="block text-gray-500 text-sm font-bold mb-1"
-            >
-              이름
-            </label>
-            <input
-              id="name"
-              type="text"
-              placeholder="이름을 입력해주세요."
-              className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* 휴대폰 번호 */}
-          <div>
-            <label
-              htmlFor="phone"
-              className="block text-gray-500 text-sm font-bold mb-1"
-            >
-              휴대폰 번호
-            </label>
-            <input
-              id="phone"
-              type="tel"
-              placeholder="휴대폰 번호를 입력해주세요."
-              className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-            />
-          </div>
-
-          {/* 약관 전체 그룹 */}
-          <div className="mt-5 rounded-md ">
-            {/* 1) 전체 약관 동의 */}
-            <div className="flex rounded-md items-center px-4 py-3 bg-gray-100">
-              <input
-                id="agreeAll"
-                type="checkbox"
-                checked={agreeAll}
-                onChange={handleAgreeAllChange}
-                className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-              />
-              <label htmlFor="agreeAll" className="ml-2 text-sm font-medium">
-                전체 약관에 동의합니다.
-              </label>
-            </div>
-
-            {/* 2) 세부 약관 동의 */}
-            <div className="px-4 py-3 space-y-2">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="termsService"
-                    type="checkbox"
-                    checked={termsService}
-                    onChange={handleServiceChange}
-                    className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="termsService" className="ml-2 text-sm">
-                    서비스 약관 동의 (필수)
-                  </label>
-                </div>
-                <button
-                  type="button"
-                  className="text-sm font-extrabold text-gray-500 cursor-pointer cursor-pointer hover:underline"
-                  onClick={() => openModal("service")}
-                >
-                  보기
-                </button>
-              </div>
-
-              <div className="flex items-center justify-between">
-                <div className="flex items-center">
-                  <input
-                    id="termsPrivacy"
-                    type="checkbox"
-                    checked={termsPrivacy}
-                    onChange={handlePrivacyChange}
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="termsPrivacy" className="ml-2 text-sm">
-                    개인정보 처리 방침 및 제3자 제공 동의 (필수)
-                  </label>
-                </div>
-                <button
-                  type="button"
-                  className="text-sm font-extrabold  text-gray-500 cursor-pointer hover:underline"
-                  onClick={() => openModal("privacy")}
-                >
-                  보기
-                </button>
-              </div>
-
-              <div>
-                <div className="flex items-center">
-                  <input
-                    id="termsMarketing"
-                    type="checkbox"
-                    className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
-                  />
-                  <label htmlFor="termsMarketing" className="ml-2 text-sm">
-                    광고성 정보 수신 동의 (선택)
-                  </label>
-                </div>
-                <p className="mt-1 text-xs text-gray-500">
-                  * 이벤트나 주요 혜택 정보가 있을 때 안내드립니다.
-                </p>
-              </div>
-            </div>
-          </div>
-
-          {/* 제출 버튼 */}
-          <div>
-            <button
-              type="submit"
-              className="w-full py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition"
-            >
-              회원 가입하기
-            </button>
-          </div>
-        </form>
-
-        {/* 로그인 링크 */}
-        <p className="text-center text-gray-500 mt-4">
-          이미 계정이 있으신가요?{" "}
-          <Link
-            to="/account/loginchoice"
-            className="text-blue-600 font-medium hover:underline"
+      <form className="space-y-2">
+        {/* 이메일 */}
+        <div>
+          <label
+            htmlFor="email"
+            className="block text-gray-500 text-sm font-bold mb-1 "
           >
-            로그인
-          </Link>
-        </p>
-      </div>
+            이메일
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="이메일 주소를 입력해주세요."
+            className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* 비밀번호 */}
+        <div>
+          <label
+            htmlFor="password"
+            className="block text-gray-500 text-sm font-bold mb-1"
+          >
+            비밀번호
+          </label>
+          <input
+            id="password"
+            type="password"
+            placeholder="특수문자, 숫자, 영문자 조합된 8 이상 문자"
+            className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* 비밀번호 확인 */}
+        <div>
+          <label
+            htmlFor="passwordConfirm"
+            className="block text-gray-500 text-sm font-bold mb-1"
+          >
+            비밀번호 확인
+          </label>
+          <input
+            id="passwordConfirm"
+            type="password"
+            placeholder="동일한 비밀번호를 다시 입력해주세요."
+            className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* 이름 */}
+        <div>
+          <label
+            htmlFor="name"
+            className="block text-gray-500 text-sm font-bold mb-1"
+          >
+            이름
+          </label>
+          <input
+            id="name"
+            type="text"
+            placeholder="이름을 입력해주세요."
+            className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* 휴대폰 번호 */}
+        <div>
+          <label
+            htmlFor="phone"
+            className="block text-gray-500 text-sm font-bold mb-1"
+          >
+            휴대폰 번호
+          </label>
+          <input
+            id="phone"
+            type="tel"
+            placeholder="휴대폰 번호를 입력해주세요."
+            className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+
+        {/* 약관 전체 그룹 */}
+        <div className="mt-5 rounded-md ">
+          {/* 1) 전체 약관 동의 */}
+          <div className="flex rounded-md items-center px-4 py-3 bg-gray-100">
+            <input
+              id="agreeAll"
+              type="checkbox"
+              checked={agreeAll}
+              onChange={handleAgreeAllChange}
+              className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+            />
+            <label htmlFor="agreeAll" className="ml-2 text-sm font-medium">
+              전체 약관에 동의합니다.
+            </label>
+          </div>
+
+          {/* 2) 세부 약관 동의 */}
+          <div className="px-4 py-3 space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="termsService"
+                  type="checkbox"
+                  checked={termsService}
+                  onChange={handleServiceChange}
+                  className="h-4 w-4 text-blue-600 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="termsService" className="ml-2 text-sm">
+                  서비스 약관 동의 (필수)
+                </label>
+              </div>
+              <button
+                type="button"
+                className="text-sm font-extrabold text-gray-500 cursor-pointer cursor-pointer hover:underline"
+                onClick={() => openModal("service")}
+              >
+                보기
+              </button>
+            </div>
+
+            <div className="flex items-center justify-between">
+              <div className="flex items-center">
+                <input
+                  id="termsPrivacy"
+                  type="checkbox"
+                  checked={termsPrivacy}
+                  onChange={handlePrivacyChange}
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="termsPrivacy" className="ml-2 text-sm">
+                  개인정보 처리 방침 및 제3자 제공 동의 (필수)
+                </label>
+              </div>
+              <button
+                type="button"
+                className="text-sm font-extrabold  text-gray-500 cursor-pointer hover:underline"
+                onClick={() => openModal("privacy")}
+              >
+                보기
+              </button>
+            </div>
+
+            <div>
+              <div className="flex items-center">
+                <input
+                  id="termsMarketing"
+                  type="checkbox"
+                  className="h-4 w-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500"
+                />
+                <label htmlFor="termsMarketing" className="ml-2 text-sm">
+                  광고성 정보 수신 동의 (선택)
+                </label>
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                * 이벤트나 주요 혜택 정보가 있을 때 안내드립니다.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* 제출 버튼 */}
+        <div>
+          <button
+            type="submit"
+            className="w-full py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition"
+          >
+            회원 가입하기
+          </button>
+        </div>
+      </form>
+
+      {/* 로그인 링크 */}
+      <p className="text-center text-gray-500 mt-4">
+        이미 계정이 있으신가요?{" "}
+        <Link
+          to="/account/loginchoice"
+          className="text-blue-600 font-medium hover:underline"
+        >
+          로그인
+        </Link>
+      </p>
       <TermsModal
         isOpen={isModalOpen}
         onClose={closeModal}

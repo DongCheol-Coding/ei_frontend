@@ -8,8 +8,8 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
 
   return (
-    <nav className="w-full bg-transparent relative z-50">
-      <div className="max-w-8xl mx-auto px-10">
+    <nav className="fixed top-[44px] left-0 w-full bg-white border-b-1 border-gray-200 z-40">
+      <div className="container max-w-8xl mx-auto px-10">
         <div className="flex items-center justify-between h-[54px]">
           {/* 로고 */}
           <div className="flex-shrink-0 flex items-center space-x-2">
