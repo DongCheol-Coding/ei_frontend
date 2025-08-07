@@ -7,7 +7,7 @@ export default function BasicLayout() {
   return (
     <div className="min-h-screen flex flex-col">
       <TopBar />
-      <div className="mx-5">
+      <div className="border-b-1 border-gray-200 px-30">
         <Navbar />
       </div>
       <main className="flex-1">
