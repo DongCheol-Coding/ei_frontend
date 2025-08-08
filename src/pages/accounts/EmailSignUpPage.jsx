@@ -1,13 +1,61 @@
 import React, { useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import TermsModal from "../../components/account/TermsModal";
+import { signup } from "../../services/user/userApi";
 
 export default function EmailSignUpPage() {
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [passwordConfirm, setPasswordConfirm] = useState("");
+  const [name, setName] = useState("");
+  const [phone, setPhone] = useState("");
+
   const [agreeAll, setAgreeAll] = useState(false);
   const [termsService, setTermsService] = useState(false);
   const [termsPrivacy, setTermsPrivacy] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [modalType, setModalType] = useState("");
+
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const navigate = useNavigate();
+
+  // 제출
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+
+    // 최소 검증 (필요 없는 경우 과감히 지워도 됩니다)
+    if (!termsService || !termsPrivacy) {
+      alert("필수 약관에 동의해 주세요.");
+      return;
+    }
+    if (!email || !password || !passwordConfirm || !name || !phone) {
+      alert("모든 필드를 입력해 주세요.");
+      return;
+    }
+    if (password !== passwordConfirm) {
+      alert("비밀번호가 일치하지 않습니다.");
+      return;
+    }
+
+    if (isSubmitting) return;
+    setIsSubmitting(true);
+
+    try {
+      const msg = await signup({
+        email,
+        password,
+        name,
+        phone,
+      });
+      alert(msg); // "인증 메일이 전송되었습니다."
+      navigate("/account/loginchoice", { replace: true });
+    } catch (err) {
+      console.error("회원 가입 실패:", err);
+      alert(err.message);
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
 
   // "전체 약관" 토글 핸들러
   const handleAgreeAllChange = (e) => {
@@ -46,7 +94,7 @@ export default function EmailSignUpPage() {
       {/* 타이틀 */}
       <h1 className="text-[40px] font-extrabold pb-2 mb-2">이메일로 가입</h1>
 
-      <form className="space-y-2">
+      <form className="space-y-2" onSubmit={handleSubmit}>
         {/* 이메일 */}
         <div>
           <label
@@ -60,6 +108,10 @@ export default function EmailSignUpPage() {
             type="email"
             placeholder="이메일 주소를 입력해주세요."
             className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            autoComplete="email"
+            required
           />
         </div>
 
@@ -76,6 +128,11 @@ export default function EmailSignUpPage() {
             type="password"
             placeholder="특수문자, 숫자, 영문자 조합된 8 이상 문자"
             className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            autoComplete="new-password"
+            minLength={8}
+            required
           />
         </div>
 
@@ -92,6 +149,11 @@ export default function EmailSignUpPage() {
             type="password"
             placeholder="동일한 비밀번호를 다시 입력해주세요."
             className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={passwordConfirm}
+            onChange={(e) => setPasswordConfirm(e.target.value)}
+            autoComplete="new-password"
+            minLength={8}
+            required
           />
         </div>
 
@@ -108,6 +170,10 @@ export default function EmailSignUpPage() {
             type="text"
             placeholder="이름을 입력해주세요."
             className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            autoComplete="name"
+            required
           />
         </div>
 
@@ -124,6 +190,10 @@ export default function EmailSignUpPage() {
             type="tel"
             placeholder="휴대폰 번호를 입력해주세요."
             className="w-full px-3 py-2 text-sm placeholder:text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            value={phone}
+            onChange={(e) => setPhone(e.target.value)}
+            autoComplete="tel"
+            required
           />
         </div>
 
@@ -211,9 +281,21 @@ export default function EmailSignUpPage() {
         <div>
           <button
             type="submit"
-            className="w-full py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition"
+            disabled={
+              isSubmitting ||
+              !termsService ||
+              !termsPrivacy ||
+              email === "" ||
+              name === "" ||
+              phone === "" ||
+              !password ||
+              !passwordConfirm
+            }
+            className="
+            w-full py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-blue-700 transition cursor-pointer
+            disabled:bg-gray-300 disabled:text-gray-500 disabled:hover:bg-gray-300 disabled:cursor-not-allowed"
           >
-            회원 가입하기
+            {isSubmitting ? "회원가입 요청 중..." : "회원 가입하기"}
           </button>
         </div>
       </form>
