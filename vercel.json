@@ -2,7 +2,7 @@
   "rewrites": [
     {
       "source": "/(.*)",
-      "destination": "/index.html"
+      "destination": "http://3.37.253.185:8080/$1"
     }
   ]
 }

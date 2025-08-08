@@ -3,7 +3,7 @@ import axios from "axios";
 const BASE_URL = import.meta.env.VITE_API_SERVER_HOST;
 
 export async function signup({ email, password, name, phone }) {
-  const requestUrl = `${BASE_URL}/api/auth/signup`;
+  const requestUrl = `${BASE_URL}/auth/signup`;
 
   try {
     const { data } = await axios.post(
