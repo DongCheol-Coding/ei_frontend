@@ -6,7 +6,7 @@ export async function signup({ email, password, name, phone }) {
   const requestUrl = `${BASE_URL}/auth/signup`;
 
   try {
-    const { res } = await axios.post(
+    const res = await axios.post(
       requestUrl,
       { email, password, name, phone },
       {
@@ -15,8 +15,16 @@ export async function signup({ email, password, name, phone }) {
       }
     );
 
-    console.log("회원가입 요청 완료", res);
-    return res.data;
+    const body = res.data;
+
+    if (body.status === 200) {
+      console.log("회원가입 요청 완료", body.data);
+      return body.data;
+    }
+    // 200이 아닌 경우
+    throw new Error(
+      body?.data || body?.message || "회원가입에 실패하였습니다."
+    );
   } catch (err) {
     if (err.response.status === 401) {
       throw new Error("이미 가입 된 Email입니다.");
