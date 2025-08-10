@@ -32,7 +32,7 @@ export default function Navbar() {
           </div>
 
           {/* 강의 메뉴 */}
-          <div className="hidden lg:flex flex-1 items-center gap-5">
+          <div className="hidden lg:flex flex-1 gap-3">
             <Link
               to="/course/data"
               className="text-lg font-medium text-gray-600 text-gray-600px-3 py-2 hover:bg-gray-100 rounded"
