@@ -36,4 +36,38 @@ export async function signup({ email, password, name, phone }) {
   }
 }
 
-export default { signup };
+export async function login({ email, password }) {
+  const requestUrl = `${BASE_URL}/auth/login`;
+
+    try {
+    const res = await axios.post(
+      requestUrl,
+      { email, password },
+      {
+        headers: { "Content-Type": "application/json" },
+        timeout: 10000,
+      }
+    );
+
+    const body = res.data;
+
+    if (body.status === 200) {
+      console.log("로그인 완료", body.data);
+      return body.data;
+    }
+    // 200이 아닌 경우
+    throw new Error(
+      body?.data || body?.message || "로그인에 실패하였습니다."
+    );
+  }  catch (err) {
+    if (err.response.status === 401) {
+      throw new Error("이메일 또는 비밀번호가 잘못되었습니다.");
+    }
+    if (err.response.status === 500) {
+      throw new Error("서버 오류가 발생했습니다. 잠시 후 다시 시도해주세요.");
+    }
+    throw new Error(err.response.data.error || "회원가입에 실패하였습니다.");
+  }
+}
+
+export default { signup, login };
