@@ -2,6 +2,10 @@
   "version": 2,
   "routes": [
     { "src": "/api/(.*)", "dest": "http://api.dongcheolcoding.life/api/$1" },
+    {
+      "src": "/oauth2/(.*)",
+      "dest": "http://api.dongcheolcoding.life/oauth2/$1"
+    },
     { "handle": "filesystem" },
     { "src": "/(.*)", "dest": "/index.html" }
   ]

@@ -3,6 +3,7 @@ import LoadingPage from "../pages/common/LoadingPage";
 
 const EmailLoginPage = lazy(() => import("../pages/accounts/EmailLoginPage"));
 const EmailSignUpPage = lazy(() => import("../pages/accounts/EmailSignUpPage"));
+const KakaoAuthPage = lazy(() => import("../pages/accounts/KakaoAuthPage"));
 const LoginLandingPage = lazy(() =>
   import("../pages/accounts/LoginLandingPage")
 );
@@ -25,6 +26,14 @@ export default function accountRouter() {
       element: (
         <Suspense fallback={<LoadingPage />}>
           <EmailSignUpPage />
+        </Suspense>
+      ),
+    },
+    {
+      path: "kakaoauth",
+      element: (
+        <Suspense fallback={<LoadingPage />}>
+          <KakaoAuthPage />
         </Suspense>
       ),
     },
