@@ -16,6 +16,7 @@ export default function EmailLoginPage() {
       alert("모든 필드를 입력해 주세요.");
       return;
     }
+    console.log("로그인 요청");
     try {
       const accessToken = await dispatch(
         loginThunk({ email, password })
@@ -24,9 +25,8 @@ export default function EmailLoginPage() {
       navigate("/", { replace: true });
     } catch (err) {
       console.error("로그인 실패:", err);
-      alert(err.message);
+      alert(err);
     }
-    console.log("로그인 요청");
   };
 
   return (

@@ -230,7 +230,7 @@ export default function EmailSignUpPage() {
               </div>
               <button
                 type="button"
-                className="text-sm font-extrabold text-gray-500 cursor-pointer cursor-pointer hover:underline"
+                className="text-sm font-extrabold text-gray-500 cursor-pointer hover:underline"
                 onClick={() => openModal("service")}
               >
                 보기
