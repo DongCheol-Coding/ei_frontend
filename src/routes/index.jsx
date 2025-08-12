@@ -2,6 +2,7 @@
 import { createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import BasicLayout from "../layouts/BasicLayout";
+import MyPageLayout from "../layouts/MyPageLayout";
 import courseRouter from "./courseRouter";
 import accountRouter from "./accountRouter";
 import mypageRouter from "./mypageRouter";
@@ -32,6 +33,7 @@ const root = createBrowserRouter([
       },
       {
         path: "mypage",
+        element: <MyPageLayout />,
         children: mypageRouter(),
       },
       {

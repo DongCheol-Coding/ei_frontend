@@ -8,7 +8,7 @@ export default function LoginLandingPage() {
   const navigate = useNavigate();
 
   const handleKakaoLogin = () => {
-    const url = `${KAKAO_OAUTH_URL}/authorization/kakao`;
+    const url = `http://3.37.253.185/oauth2/authorization/kakao`;
     window.location.href = url;
   };
 
