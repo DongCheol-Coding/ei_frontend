@@ -96,7 +96,7 @@ export default function EmailLoginPage() {
         <div>
           <button
             type="submit"
-            className="w-full py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-[#0047ff] transition mt-8"
+            className="w-full py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-[#0047ff] transition mt-8 cursor-pointer"
           >
             {status === "loading" ? "로그인 중..." : "로그인"}
           </button>
