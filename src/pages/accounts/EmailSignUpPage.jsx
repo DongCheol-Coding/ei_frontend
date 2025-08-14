@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import TermsModal from "../../components/account/TermsModal";
-import { signup } from "../../services/user/userApi";
+import { signup } from "../../services/api/userApi";
 
 export default function EmailSignUpPage() {
   const [email, setEmail] = useState("");

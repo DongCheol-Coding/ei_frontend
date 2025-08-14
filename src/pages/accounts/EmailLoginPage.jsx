@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { loginThunk } from "../../services/auth/authSlice";
@@ -7,8 +7,21 @@ export default function EmailLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const status = useSelector((s) => s.auth.status);
+  const isAuth = useSelector((s) => s.auth.isAuth);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    if (isAuth) {
+      const next = sessionStorage.getItem("returnTo");
+      if (next && next.startsWith("/mypage")) {
+        sessionStorage.removeItem("returnTo");
+        navigate(next, { replace: true });
+      } else {
+        navigate("/mypage", { replace: true });
+      }
+    }
+  }, [isAuth, navigate]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -16,13 +29,16 @@ export default function EmailLoginPage() {
       alert("모든 필드를 입력해 주세요.");
       return;
     }
-    console.log("로그인 요청");
     try {
-      const accessToken = await dispatch(
-        loginThunk({ email, password })
-      ).unwrap();
-      console.log("로그인 성공. accessToken:", accessToken);
-      navigate("/", { replace: true });
+      const user = await dispatch(loginThunk({ email, password })).unwrap();
+      console.log("로그인 성공. user:", user);
+
+      const next = sessionStorage.getItem("returnTo");
+      sessionStorage.removeItem("returnTo");
+
+      navigate(next && next.startsWith("/mypage") ? next : "/mypage", {
+        replace: true,
+      });
     } catch (err) {
       console.error("로그인 실패:", err);
       alert(err);

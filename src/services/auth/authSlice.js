@@ -1,6 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
-import { login as loginApi } from "../user/userApi";
-import { api } from "../api";
+import { login as loginApi } from "../api/userApi";
+import { api } from "../api/basicApi";
 import { tokenStorage } from "../../lib/tokenStorage";
 
 const initialToken = tokenStorage.get();
@@ -19,10 +19,11 @@ export const fetchMe = createAsyncThunk(
 
 export const loginThunk = createAsyncThunk(
   "auth/login",
-  async ({ email, password }, { rejectWithValue }) => {
+  async ({ email, password }, { dispatch, rejectWithValue }) => {
     try {
-      const data = await loginApi({ email, password });
-      return data.accessToken;
+      await loginApi({ email, password }); // 쿠키 세팅 완료
+      const me = await dispatch(fetchMe()).unwrap(); // 사용자 정보 취득
+      return me;
     } catch (e) {
       return rejectWithValue(e.message || "로그인 실패");
     }
