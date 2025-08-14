@@ -6,6 +6,7 @@ import { loginThunk } from "../../services/auth/authSlice";
 export default function EmailLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const status = useSelector((s) => s.auth.status);
   const isAuth = useSelector((s) => s.auth.isAuth);
   const dispatch = useDispatch();
@@ -29,6 +30,9 @@ export default function EmailLoginPage() {
       alert("모든 필드를 입력해 주세요.");
       return;
     }
+    if (isSubmitting || status === "loading") return;
+    setIsSubmitting(true);
+
     try {
       const user = await dispatch(loginThunk({ email, password })).unwrap();
       console.log("로그인 성공. user:", user);
@@ -42,8 +46,13 @@ export default function EmailLoginPage() {
     } catch (err) {
       console.error("로그인 실패:", err);
       alert(err);
+    } finally {
+      setIsSubmitting(false);
     }
   };
+
+  // 버튼 비활성 조건: 제출 중이거나 리덕스 로딩
+  const isBusy = isSubmitting || status === "loading";
 
   return (
     <div className="bg-white border border-gray-200 shadow-sm p-5 w-full max-w-[400px]">
@@ -96,9 +105,13 @@ export default function EmailLoginPage() {
         <div>
           <button
             type="submit"
-            className="w-full py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-[#0047ff] transition mt-8 cursor-pointer"
+            disabled={isBusy}
+            className="
+              w-full py-4 bg-blue-600 text-white font-bold rounded-lg hover:bg-[#0047ff] transition mt-8
+              disabled:bg-gray-300 disabled:text-gray-500 disabled:hover:bg-gray-300 disabled:cursor-not-allowed
+            "
           >
-            {status === "loading" ? "로그인 중..." : "로그인"}
+            {isBusy ? "로그인 중..." : "로그인"}
           </button>
         </div>
       </form>
