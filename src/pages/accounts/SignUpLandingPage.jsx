@@ -2,13 +2,13 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import kakaoIcon from "../../assets/icon-kakao.svg";
 
-const KAKAO_OAUTH_URL = import.meta.env.VITE_KAKAO_OAUTH;
+const BASE_URL = import.meta.env.VITE_API_SERVER_HOST;
 
 export default function LoginLandingPage() {
   const navigate = useNavigate();
 
   const handleKakaoLogin = () => {
-    const url = `${KAKAO_OAUTH_URL}/authorization/kakao`;
+    const url = `${BASE_URL}/oauth2/authorization/kakao`;
     window.location.href = url;
   };
 
