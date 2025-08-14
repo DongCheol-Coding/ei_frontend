@@ -1,6 +1,6 @@
 // src/components/navbar/Navbar.jsx
 import { useState } from "react";
-import { Link, useNavigate } from "react-router-dom";
+import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../services/auth/authSlice";
 import { Menu, X } from "lucide-react";
@@ -23,6 +23,12 @@ export default function Navbar() {
       navigate("/", { replace: true });
     }
   };
+
+  const base = "text-gray-600 px-3 py-2 hover:bg-gray-100 rounded";
+  const item = ({ isActive }) =>
+    `${base} ${isActive ? "font-extrabold" : "font-medium"}`;
+
+  const name = useSelector((s) => s.auth?.user?.name) ?? "비회원";
 
   return (
     <nav className="fixed top-[44px] left-0 w-full bg-white border-b-1 border-gray-200 z-40">
@@ -49,31 +55,19 @@ export default function Navbar() {
           </div>
 
           {/* 강의 메뉴 */}
-          <div className="hidden lg:flex flex-1 gap-3">
-            <Link
-              to="/course/data"
-              className="text-lg font-medium text-gray-600 text-gray-600px-3 py-2 hover:bg-gray-100 rounded"
-            >
+          <div className="hidden lg:flex flex-1 gap-3 text-sm xl:text-lg">
+            <NavLink to="/course/data" className={item}>
               DATA/AI 부트캠프
-            </Link>
-            <Link
-              to="/course/fullstack"
-              className="text-lg font-medium text-gray-600 px-3 py-2 hover:bg-gray-100 rounded"
-            >
+            </NavLink>
+            <NavLink to="/course/fullstack" className={item}>
               풀스택 부트캠프
-            </Link>
-            <Link
-              to="/course/frontend"
-              className="text-lg font-medium text-gray-600 px-3 py-2 hover:bg-gray-100 rounded"
-            >
+            </NavLink>
+            <NavLink to="/course/frontend" className={item}>
               프론트엔드 부트캠프
-            </Link>
-            <Link
-              to="/course/backend"
-              className="text-lg font-medium text-gray-600 px-3 py-2 hover:bg-gray-100 rounded"
-            >
+            </NavLink>
+            <NavLink to="/course/backend" className={item}>
               백엔드 부트캠프
-            </Link>
+            </NavLink>
           </div>
 
           {/* 오른쪽 버튼/링크 */}
@@ -110,19 +104,24 @@ export default function Navbar() {
                     transition duration-150
                     absolute right-0 top-full mt-2 w-44
                     bg-white border border-gray-200 rounded-lg shadow-lg z-50
-                    py-2
+                     text-center
                   "
                 >
+                  <div className="bg-gray-100/80 rounded-none lg:rounded-t-lg lg:rounded-b-none p-2">
+                    <span className="text-sm">안녕하세요, </span>
+                    <span className="text-sm font-bold">{name}</span>
+                    <span className="text-sm"> 님</span>
+                  </div>
                   <Link
                     to="mypage"
-                    className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-50"
+                    className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-50 hover:font-bold"
                   >
                     마이페이지
                   </Link>
                   <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full text-left block px-4 py-2 text-sm text-gray-800 hover:bg-gray-50 cursor-pointer"
+                    className="w-full block px-4 py-2 text-sm text-gray-800 hover:bg-gray-50 hover:font-bold cursor-pointer "
                   >
                     로그아웃
                   </button>

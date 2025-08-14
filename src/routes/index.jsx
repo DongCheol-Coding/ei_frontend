@@ -8,6 +8,7 @@ import accountRouter from "./accountRouter";
 import mypageRouter from "./mypageRouter";
 import LoadingPage from "../pages/common/LoadingPage";
 import NotFoundPage from "../pages/common/NotFoundPage";
+import RequireAuth from "../pages/mypages/RequireAuth";
 
 const LandingPage = lazy(() => import("../pages/LandingPage"));
 
@@ -32,9 +33,14 @@ const root = createBrowserRouter([
         children: accountRouter(),
       },
       {
-        path: "mypage",
-        element: <MyPageLayout />,
-        children: mypageRouter(),
+        element: <RequireAuth redirectTo="/" />,
+        children: [
+          {
+            path: "mypage",
+            element: <MyPageLayout />,
+            children: mypageRouter(),
+          },
+        ],
       },
       {
         path: "*",
