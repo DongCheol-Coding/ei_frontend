@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import kakaoIcon from "../../assets/icon-kakao.svg";
 
@@ -7,7 +7,13 @@ const BASE_URL = import.meta.env.VITE_API_SERVER_HOST;
 export default function LoginLandingPage() {
   const navigate = useNavigate();
 
+  const kakaoClickedRef = useRef(false);
+  const [kakaoLocked, setKakaoLocked] = useState(false);
+
   const handleKakaoLogin = () => {
+    if (kakaoClickedRef.current) return;
+    kakaoClickedRef.current = true;
+    setKakaoLocked(true);
     const url = `${BASE_URL}/oauth2/authorization/kakao`;
     window.location.href = url;
   };
@@ -21,6 +27,8 @@ export default function LoginLandingPage() {
       <button
         type="button"
         onClick={() => handleKakaoLogin()}
+        disabled={kakaoLocked}
+        aria-disabled={kakaoLocked}
         className="w-full text-[18px] font-bold flex items-center justify-center mb-4 py-3 rounded-lg bg-[#fae100] hover:bg-yellow-300 transition cursor-pointer"
       >
         <img src={kakaoIcon} alt="카카오 아이콘" />
