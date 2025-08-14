@@ -1,14 +1,27 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { login as loginApi } from "../user/userApi";
+import { api } from "../api";
 import { tokenStorage } from "../../lib/tokenStorage";
 
 const initialToken = tokenStorage.get();
+
+export const fetchMe = createAsyncThunk(
+  "auth/fetchMe",
+  async (_, { rejectWithValue }) => {
+    try {
+      const res = await api.get("/api/auth/me");
+      return res.data?.data; // { id, email, name, roles }
+    } catch (e) {
+      return rejectWithValue(e?.response?.data ?? null);
+    }
+  }
+);
 
 export const loginThunk = createAsyncThunk(
   "auth/login",
   async ({ email, password }, { rejectWithValue }) => {
     try {
-      const data = await loginApi({ email, password }); 
+      const data = await loginApi({ email, password });
       return data.accessToken;
     } catch (e) {
       return rejectWithValue(e.message || "로그인 실패");
@@ -16,36 +29,52 @@ export const loginThunk = createAsyncThunk(
   }
 );
 
-const authSlice = createSlice({
+export const logout = createAsyncThunk("auth/logout", async () => {
+  await api.post("/api/auth/logout"); // 서버가 쿠키 제거
+});
+
+const slice = createSlice({
   name: "auth",
   initialState: {
-    isAuthenticated: !!initialToken,
-    accessToken: initialToken,
-    status: "idle",
-    error: null,
+    user: null,
+    isAuthenticated: false,
+    hydrated: false, // /me 1회 확인 완료 여부
   },
   reducers: {
-    logout(state) {
+    setUser(state, action) {
+      state.user = action.payload;
+      state.isAuthenticated = !!action.payload;
+    },
+    setHydrated(state, action) {
+      state.hydrated = action.payload ?? true;
+    },
+    clearUser(state) {
+      state.user = null;
       state.isAuthenticated = false;
-      state.accessToken = null;
-      tokenStorage.clear();
     },
   },
   extraReducers: (b) => {
-    b.addCase(loginThunk.pending, (s) => {
-      s.status = "loading"; s.error = null;
+    b.addCase(fetchMe.fulfilled, (s, a) => {
+      s.user = a.payload;
+      s.isAuthenticated = !!a.payload;
+      s.hydrated = true;
     });
-    b.addCase(loginThunk.fulfilled, (s, a) => {
-      s.status = "succeeded";
-      s.accessToken = a.payload;
-      s.isAuthenticated = true;
-      tokenStorage.set(a.payload);
+    b.addCase(fetchMe.rejected, (s) => {
+      s.user = null;
+      s.isAuthenticated = false;
+      s.hydrated = true;
     });
-    b.addCase(loginThunk.rejected, (s, a) => {
-      s.status = "failed"; s.error = a.payload;
+    b.addCase(logout.fulfilled, (s) => {
+      s.user = null;
+      s.isAuthenticated = false;
     });
   },
 });
 
-export const { logout } = authSlice.actions;
-export default authSlice.reducer;
+export const { setUser, setHydrated, clearUser } = slice.actions;
+
+export const selectUser = (s) => s.auth.user;
+export const selectIsAuth = (s) => s.auth.isAuthenticated;
+export const selectHydrated = (s) => s.auth.hydrated;
+
+export default slice.reducer;

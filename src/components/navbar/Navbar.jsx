@@ -12,10 +12,16 @@ export default function Navbar() {
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
-  const handleLogout = () => {
-    dispatch(logout());
-    setOpen(false);
-    navigate("/", { replace: true });
+  const handleLogout = async (e) => {
+    e?.preventDefault?.();
+    try {
+      await dispatch(logout()).unwrap();
+    } catch (err) {
+      console.error("logout failed:", err);
+    } finally {
+      setOpen(false);
+      navigate("/", { replace: true });
+    }
   };
 
   return (
@@ -113,13 +119,13 @@ export default function Navbar() {
                   >
                     마이페이지
                   </Link>
-                  <Link
+                  <button
                     type="button"
                     onClick={handleLogout}
-                    className="w-full text-left block px-4 py-2 text-sm text-gray-800 hover:bg-gray-50"
+                    className="w-full text-left block px-4 py-2 text-sm text-gray-800 hover:bg-gray-50 cursor-pointer"
                   >
                     로그아웃
-                  </Link>
+                  </button>
                 </div>
               </div>
             ) : (
@@ -198,14 +204,12 @@ export default function Navbar() {
               <div className="py-2 text-center">
                 {isAuth ? (
                   <>
-                    <div>
-                      <Link
-                        to="mypage"
-                        className="block px-4 py-3 text-[15px] font-bold hover:bg-violet-50"
-                      >
-                        마이페이지
-                      </Link>
-                    </div>
+                    <Link
+                      to="mypage"
+                      className="block px-4 py-3 text-[15px] font-bold hover:bg-violet-50"
+                    >
+                      마이페이지
+                    </Link>
                     <Link
                       onClick={handleLogout}
                       className="block px-4 py-3 text-sm font-semibold text-gray-400 hover:bg-violet-50"

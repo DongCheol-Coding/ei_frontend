@@ -1,5 +1,6 @@
 import React from "react";
 import { NavLink } from "react-router-dom";
+import { useSelector } from "react-redux";
 
 const linkCls = ({ isActive }) =>
   [
@@ -10,6 +11,8 @@ const linkCls = ({ isActive }) =>
   ].join(" ");
 
 export default function SideBar() {
+  const name = useSelector((s) => s.auth?.user?.name) ?? "비회원";
+
   return (
     <aside className="w-full h-full shrink-0 ">
       <div className="bg-white rounded-2xl border border-gray-200 h-full flex flex-col">
@@ -18,7 +21,7 @@ export default function SideBar() {
             img
           </div>
           <div className="mt-1 ">
-            <span className="text-[24px] font-extrabold">[FE]PART.이동현</span>
+            <span className="text-[24px] font-extrabold">{name}</span>
             <span className="font-bold"> 님,</span>
           </div>
           <div className="text-s text-gray-500 font-bold">반가워요!</div>
