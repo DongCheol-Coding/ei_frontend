@@ -3,7 +3,7 @@ import axios from "axios";
 const BASE_URL = import.meta.env.VITE_API_SERVER_HOST;
 
 export async function signup({ email, password, name, phone }) {
-  const requestUrl = `${BASE_URL}/auth/signup`;
+  const requestUrl = `${BASE_URL}/api/auth/signup`;
 
   try {
     const res = await axios.post(
@@ -17,6 +17,14 @@ export async function signup({ email, password, name, phone }) {
 
     const body = res.data;
 
+    if (!body || typeof body !== "object") {
+      if (res.status >= 200 && res.status < 300) {
+        // 서버가 바디 없이 200을 주는 경우
+        return null; // 필요하면 {}로 바꿔 사용
+      }
+      throw new Error(`예상치 못한 응답 형식 (HTTP ${res.status})`);
+    }
+
     if (body.status === 200) {
       console.log("회원가입 요청 완료", body.data);
       return body.data;
@@ -26,6 +34,9 @@ export async function signup({ email, password, name, phone }) {
       body?.data || body?.message || "회원가입에 실패하였습니다."
     );
   } catch (err) {
+    if (err.response.status === 400) {
+      throw new Error("전화번호가 양식에 맞지 않습니다.");
+    }
     if (err.response.status === 409) {
       throw new Error("이미 가입된 이메일입니다.");
     }
@@ -37,7 +48,7 @@ export async function signup({ email, password, name, phone }) {
 }
 
 export async function login({ email, password }) {
-  const requestUrl = `${BASE_URL}/auth/login`;
+  const requestUrl = `${BASE_URL}/api/auth/login`;
 
   try {
     const res = await axios.post(
