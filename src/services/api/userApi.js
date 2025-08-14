@@ -31,9 +31,7 @@ export async function signup({ email, password, name, phone }) {
       return body.data;
     }
     // 200이 아닌 경우
-    throw new Error(
-      body?.data || body?.message || "회원가입에 실패하였습니다."
-    );
+    throw new Error("이메일 또는 비밀번호가 잘못되었습니다.");
   } catch (err) {
     if (err.response.status === 400) {
       throw new Error("전화번호가 양식에 맞지 않습니다.");
