@@ -1,6 +1,9 @@
 import React from "react";
-import { NavLink } from "react-router-dom";
+import { NavLink, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
+import UserImage from "./userImage";
+import noImage from "../../assets/mypage/noimage.png";
+
 
 const linkCls = ({ isActive }) =>
   [
@@ -11,15 +14,25 @@ const linkCls = ({ isActive }) =>
   ].join(" ");
 
 export default function SideBar() {
-  const name = useSelector((s) => s.auth?.user?.name) ?? "비회원";
+  const user = useSelector((s) => s.auth?.user);
+  const name = user?.name ?? "비회원";
+  const imageUrl = user?.imageUrl ?? "";
+  const roles = user?.roles ?? [];
+
+  const admin =
+    Array.isArray(roles) &&
+    roles
+      .map((r) => String(r).toUpperCase().trim())
+      .some((r) => r === "ROLE_ADMIN" || r === "ROLE_SUPPORT");
 
   return (
     <aside className="w-full h-full shrink-0 ">
       <div className="bg-white rounded-2xl border border-gray-200 h-full flex flex-col">
         <div className="px-6 py-8 text-center">
-          <div className="mx-auto mb-4 h-[120px] w-[120px] rounded-full grid place-items-center bg-gray-100 text-gray-500 text-2xl">
-            img
-          </div>
+         <UserImage
+         imageUrl={imageUrl}
+         noImage={noImage} />
+
           <div className="mt-1 ">
             <span className="text-[24px] font-extrabold">{name}</span>
             <span className="font-bold"> 님,</span>
@@ -32,6 +45,9 @@ export default function SideBar() {
               👤 마이페이지
             </div>
             <div className="p-2">
+              <NavLink to="." end className={linkCls}>
+                대시보드
+              </NavLink>
               <NavLink to="profile" className={linkCls}>
                 프로필
               </NavLink>
@@ -53,6 +69,16 @@ export default function SideBar() {
               </NavLink>
             </div>
           </div>
+          {admin && (
+            <div className="p-2">
+              <Link
+                to="/admin"
+                className="block px-3 pt-2 pb-1 text-[22px] tracking-wide font-bold text-red-500 hover:bg-gray-50 cursor-pointer"
+              >
+                🛠️ 관리자 페이지
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </aside>

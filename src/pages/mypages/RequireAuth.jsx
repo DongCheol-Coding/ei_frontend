@@ -1,4 +1,3 @@
-// src/routes/RequireAuth.jsx
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { Navigate, Outlet, useLocation } from "react-router-dom";

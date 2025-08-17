@@ -3,12 +3,15 @@ import { createBrowserRouter } from "react-router-dom";
 import { lazy, Suspense } from "react";
 import BasicLayout from "../layouts/BasicLayout";
 import MyPageLayout from "../layouts/MyPageLayout";
+import AdminPageLayout from "../layouts/AdminPageLayout";
 import courseRouter from "./courseRouter";
 import accountRouter from "./accountRouter";
 import mypageRouter from "./mypageRouter";
+import adminRouter from "./adminRouter";
 import LoadingPage from "../pages/common/LoadingPage";
 import NotFoundPage from "../pages/common/NotFoundPage";
 import RequireAuth from "../pages/mypages/RequireAuth";
+import AdminRequireAuth from "../pages/admin/RequireAdminAuth";
 
 const LandingPage = lazy(() => import("../pages/LandingPage"));
 
@@ -39,6 +42,16 @@ const root = createBrowserRouter([
             path: "mypage",
             element: <MyPageLayout />,
             children: mypageRouter(),
+          },
+        ],
+      },
+      {
+        element: <AdminRequireAuth redirectTo="/" />,
+        children: [
+          {
+            path: "admin",
+            element: <AdminPageLayout />,
+            children: adminRouter(),
           },
         ],
       },

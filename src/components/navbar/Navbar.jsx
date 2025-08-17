@@ -9,8 +9,16 @@ import dc_logo from "../../assets/cd_logo.png";
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const isAuth = useSelector((s) => s.auth.isAuthenticated);
+  const user = useSelector((s) => s.auth?.user);
+  const roles = user?.roles ?? [];
   const dispatch = useDispatch();
   const navigate = useNavigate();
+
+  const admin =
+    Array.isArray(roles) &&
+    roles
+      .map((r) => String(r).toUpperCase().trim())
+      .some((r) => r === "ROLE_ADMIN" || r === "ROLE_SUPPORT");
 
   const handleLogout = async (e) => {
     e?.preventDefault?.();
@@ -109,17 +117,23 @@ export default function Navbar() {
                      text-center
                   "
                 >
-                  <div className="bg-gray-100/80 rounded-none lg:rounded-t-lg lg:rounded-b-none p-2">
-                    <span className="text-sm">안녕하세요, </span>
-                    <span className="text-sm font-bold">{name}</span>
-                    <span className="text-sm"> 님</span>
-                  </div>
+                  {!admin && (
+                    <div className="bg-gray-100/80 rounded-none lg:rounded-t-lg lg:rounded-b-none p-2 ">
+                      <span className="text-sm">안녕하세요, </span>
+                      <span className="text-sm font-bold ">{name}</span>
+                      <span className="text-sm"> 님</span>
+                    </div>
+                  )}
                   <Link
-                    to="mypage"
-                    className="block px-4 py-2 text-sm text-gray-800 hover:bg-gray-50 hover:font-bold"
+                    to={admin ? "admin" : "mypage"}
+                    className={[
+                      "block px-4 py-2 text-sm hover:bg-gray-50 hover:font-bold",
+                      admin ? "text-red-500" : "text-gray-800",
+                    ].join(" ")}
                   >
-                    마이페이지
+                    {admin ? "관리자페이지" : "마이페이지"}
                   </Link>
+
                   <button
                     type="button"
                     onClick={handleLogout}

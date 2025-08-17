@@ -6,8 +6,13 @@ import root from "./routes";
 
 function App() {
   const dispatch = useDispatch();
+
   useEffect(() => {
-    dispatch(fetchMe());
+    const path = window.location.pathname;
+    const isAuthPage = /^\/account\/(login|signup|kakaoauth)/.test(path);
+    if (!isAuthPage) {
+      dispatch(fetchMe()); // 인증 페이지가 아닐 때만 실행
+    }
   }, [dispatch]);
 
   return <RouterProvider router={root} />;

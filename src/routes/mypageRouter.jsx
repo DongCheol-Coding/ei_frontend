@@ -2,7 +2,7 @@ import { lazy, Suspense } from "react";
 import LoadingPage from "../pages/common/LoadingPage";
 
 const MyPageLandingPage = lazy(() =>
-  import("../pages/mypages/MyPageLandingPage")
+  import("../pages/mypages/DashBoardPage")
 );
 const EndCoursePage = lazy(() => import("../pages/mypages/EndCoursePage"));
 const IngCoursePage = lazy(() => import("../pages/mypages/IngCoursePage"));
