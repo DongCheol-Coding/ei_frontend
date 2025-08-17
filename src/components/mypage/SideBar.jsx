@@ -1,9 +1,8 @@
 import React from "react";
 import { NavLink, Link } from "react-router-dom";
 import { useSelector } from "react-redux";
-import UserImage from "./userImage";
+import UserImage from "./UserImage";
 import noImage from "../../assets/mypage/noimage.png";
-
 
 const linkCls = ({ isActive }) =>
   [
@@ -29,9 +28,7 @@ export default function SideBar() {
     <aside className="w-full h-full shrink-0 ">
       <div className="bg-white rounded-2xl border border-gray-200 h-full flex flex-col">
         <div className="px-6 py-8 text-center">
-         <UserImage
-         imageUrl={imageUrl}
-         noImage={noImage} />
+          <UserImage imageUrl={imageUrl} noImage={noImage} />
 
           <div className="mt-1 ">
             <span className="text-[24px] font-extrabold">{name}</span>
