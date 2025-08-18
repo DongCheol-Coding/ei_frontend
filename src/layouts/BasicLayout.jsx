@@ -14,7 +14,7 @@ export default function BasicLayout() {
       <main className="flex-1 mt-[98px] min-h-[calc(100vh-98px)] flex items-center justify-center">
         <Outlet />
       </main>
-      <Footer />
+      <Footer className="mt-auto" />
     </div>
   );
 }
