@@ -1,14 +1,18 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import { loginThunk, selectIsAuth, selectHydrated } from "../../services/auth/authSlice";
+import {
+  loginThunk,
+  selectIsAuth,
+  selectHydrated,
+} from "../../services/auth/authSlice";
 
 export default function EmailLoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isAuth = useSelector(selectIsAuth);
-  const hydrated = useSelector(selectHydrated); 
+  const hydrated = useSelector(selectHydrated);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 
@@ -35,7 +39,6 @@ export default function EmailLoginPage() {
 
     try {
       const user = await dispatch(loginThunk({ email, password })).unwrap();
-      console.log("로그인 성공. user:", user);
 
       const next = sessionStorage.getItem("returnTo");
       sessionStorage.removeItem("returnTo");

@@ -47,8 +47,8 @@ export default function ProfilePage() {
 
     try {
       setDelLoading(true);
-      const msg = await deleteAccount();
-      alert(msg || "계정이 삭제(탈퇴) 처리되었습니다.");
+      await deleteAccount();
+      alert("계정이 삭제(탈퇴) 처리되었습니다.");
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
