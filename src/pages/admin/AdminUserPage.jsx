@@ -102,6 +102,15 @@ export default function AdminUserPage() {
     );
   };
 
+  const formatPhone = (v) => {
+    if (!v) return "";
+    const s = String(v).replace(/\D/g, "");
+    if (s.length === 11) return s.replace(/(\d{3})(\d{4})(\d{4})/, "$1-$2-$3");
+    if (s.length === 10)
+      return s.replace(/(\d{2,3})(\d{3,4})(\d{4})/, "$1-$2-$3");
+    return v; // 숫자 길이 다르면 원문 표시
+  };
+
   // ---- Pagination 계산 ----
   const pageCount = Math.max(1, Math.ceil(rows.length / PAGE_SIZE));
   const startIdx = (page - 1) * PAGE_SIZE;
@@ -208,6 +217,7 @@ export default function AdminUserPage() {
                     <th className="text-left px-3 py-2">ID</th>
                     <th className="text-left px-3 py-2">사용자</th>
                     <th className="text-left px-3 py-2">이메일</th>
+                    <th className="text-left px-3 py-2">전화</th>
                     <th className="text-left px-3 py-2">권한</th>
                     <th className="text-left px-3 py-2">소셜</th>
                   </tr>
@@ -224,6 +234,9 @@ export default function AdminUserPage() {
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap">
                         {u.email || "—"}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {formatPhone(u.phone)}
                       </td>
                       <td className="px-3 py-2">
                         <div className="flex flex-wrap gap-1">

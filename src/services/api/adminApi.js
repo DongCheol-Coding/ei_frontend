@@ -5,7 +5,8 @@ export async function searchUsers(query = {}, opts = {}) {
   const params = {};
 
   if (typeof name === "string" && name.trim()) params.name = name.trim();
-  if (typeof phoneSuffix === "string" && phoneSuffix.trim()) params.phoneSuffix = phoneSuffix.trim();
+  if (typeof phoneSuffix === "string" && phoneSuffix.trim())
+    params.phoneSuffix = phoneSuffix.trim();
   if (typeof role === "string" && role.trim()) params.role = role.trim();
 
   const headers = {};
@@ -25,6 +26,7 @@ export async function searchUsers(query = {}, opts = {}) {
       id: u?.id,
       email: u?.email ?? "",
       name: u?.name ?? "",
+      phone: u?.phone ?? "",
       roles: Array.isArray(u?.roles) ? u.roles : [],
       social: Boolean(u?.social),
       imageUrl: u?.imageUrl ?? null,
