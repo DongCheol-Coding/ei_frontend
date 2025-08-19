@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { useOutletContext } from "react-router-dom";
-import { changePassword } from "../../services/api/myPageApi";
+import { changePassword, deleteAccount } from "../../services/api/myPageApi";
 
 export default function ProfilePage() {
   const { user } = useOutletContext();
