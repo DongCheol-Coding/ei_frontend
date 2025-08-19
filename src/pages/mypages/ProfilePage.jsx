@@ -8,6 +8,7 @@ export default function ProfilePage() {
   const [pw, setPw] = useState("");
   const [pw2, setPw2] = useState("");
   const [loading, setLoading] = useState(false);
+  const [delLoading, setDelLoading] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,6 +36,34 @@ export default function ProfilePage() {
     } finally {
       setLoading(false);
     }
+  };
+
+  const handleDeleteAccount = async () => {
+    if (delLoading || loading) return;
+    const ok = window.confirm(
+      "정말로 회원 탈퇴하시겠습니까?\n탈퇴 후 데이터는 복구할 수 없습니다."
+    );
+    if (!ok) return;
+
+    try {
+      setDelLoading(true);
+      const msg = await deleteAccount();
+      alert(msg || "계정이 삭제(탈퇴) 처리되었습니다.");
+    } catch (err) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "회원 탈퇴에 실패했습니다.";
+      alert(msg);
+      return;
+    } finally {
+      setDelLoading(false);
+    }
+
+    try {
+      await dispatch(logout()).unwrap();
+    } catch {}
+    navigate("/", { replace: true });
   };
 
   return (
@@ -99,9 +128,11 @@ export default function ProfilePage() {
               </button>
               <button
                 type="button"
+                onClick={handleDeleteAccount}
+                disabled={delLoading || loading}
                 className="px-3 py-2 text-sm text-gray-400 rounded-md border border-gray-300 hover:font-bold cursor-pointer"
               >
-                회원 탈퇴
+                {delLoading ? "탈퇴 처리중..." : "회원 탈퇴"}
               </button>
             </div>
           </form>

@@ -71,3 +71,37 @@ export async function changePassword(newPassword, opts = {}) {
     throw err;
   }
 }
+
+export async function deleteAccount(opts = {}) {
+  try {
+    // 바디 없이 DELETE 요청
+    const res = await api.delete("/api/auth/account", { signal: opts.signal });
+    const body = res?.data;
+
+    // 바디 없이 200만 오는 경우까지 허용
+    if (!body || typeof body !== "object") {
+      if (res.status >= 200 && res.status < 300) {
+        return "계정이 삭제(탈퇴) 처리되었습니다.";
+      }
+      throw new Error(`예상치 못한 응답 형식 (HTTP ${res.status})`);
+    }
+
+    // 서버 응답 포맷: { status:200, success:true, message, data }
+    const ok = body.status === 200 || body.success === true;
+    if (ok) {
+      return (
+        (typeof body.message === "string" && body.message.trim()) ||
+        "계정이 삭제(탈퇴) 처리되었습니다."
+      );
+    }
+
+    throw new Error(body?.message || "회원 탈퇴에 실패했습니다.");
+  } catch (err) {
+    // 네트워크/CORS 등으로 response 자체가 없는 경우
+    if (!err?.response) {
+      throw new Error("네트워크/CORS 오류로 회원 탈퇴 요청에 실패했습니다.");
+    }
+    // 401 등 인증 오류는 basicApi 인터셉터에서 공통 처리
+    throw err;
+  }
+}
