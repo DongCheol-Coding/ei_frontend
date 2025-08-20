@@ -1,8 +1,9 @@
 import { useState } from "react";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import { changePassword, deleteAccount } from "../../services/api/myPageApi";
 
 export default function ProfilePage() {
+  const navigate = useNavigate();
   const { user } = useOutletContext();
 
   const [pw, setPw] = useState("");
@@ -48,31 +49,37 @@ export default function ProfilePage() {
 
   const handleDeleteAccount = async () => {
     if (delLoading || loading) return;
-    const ok = window.confirm(
-      "정말로 회원 탈퇴하시겠습니까?\n탈퇴 후 데이터는 복구할 수 없습니다."
-    );
-    if (!ok) return;
+    if (
+      !window.confirm(
+        "정말로 회원 탈퇴하시겠습니까?\n탈퇴 후 데이터는 복구할 수 없습니다."
+      )
+    )
+      return;
 
     try {
       setDelLoading(true);
+
+      // 1) 계정 삭제
       await deleteAccount();
       alert("계정이 삭제(탈퇴) 처리되었습니다.");
+
+      // 2) 서버 로그아웃(쿠키 만료; 실패해도 진행)
+      try {
+        await api.post("/api/auth/logout");
+      } catch {}
+
+      // 3) 하드 리다이렉트(앱 부트스트랩 재실행 보장)
+      window.location.replace("/");
+      // 또는: window.location.href = "/";
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
         err?.message ||
         "회원 탈퇴에 실패했습니다.";
       alert(msg);
-      return;
     } finally {
       setDelLoading(false);
     }
-
-    try {
-      await dispatch(logout()).unwrap();
-    } catch {}
-
-    navigate("/", { replace: true });
   };
 
   return (
