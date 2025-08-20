@@ -1,9 +1,13 @@
+import { useNavigate } from "react-router-dom";
+
 import backgroundImg from "../../assets/data/ai-main-background-pc.avif";
 import dalpha from "../../assets/data/DALPHA.avif";
 import thoughtly from "../../assets/data/thoughtly.avif";
 import StickyCard from "../../components/course/StickyCard";
 
 export default function DataAIPage() {
+  const navigate = useNavigate();
+
   return (
     <section className="relative w-full h-[calc(100vh-98px)] flex items-center justify-center ">
       <div className="absolute w-[100%] h-full bg-[radial-gradient(circle_at_left_bottom,theme(colors.sky.100),theme(colors.white))]" />
@@ -74,17 +78,17 @@ export default function DataAIPage() {
         </p>
 
         {/* 버튼 */}
-        <button className="mt-10 px-20 py-5 bg-black text-white font-bold text-2xl rounded-lg hover:bg-gray-900">
+        <button
+          onClick={() => navigate("/course/payment")}
+          className="mt-10 px-20 py-5 bg-black text-white font-bold text-2xl rounded-lg hover:bg-gray-900"
+        >
           100% 취업 보장받고 시작하기
         </button>
       </div>
       <StickyCard
         top={110}
         dDay={5}
-        onCtaClick={() => {
-          const el = document.getElementById("apply");
-          if (el) el.scrollIntoView({ behavior: "smooth" });
-        }}
+        onCtaClick={() => navigate("/course/payment")}
       />
     </section>
   );
