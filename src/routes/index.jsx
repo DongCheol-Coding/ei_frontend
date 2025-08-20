@@ -10,7 +10,7 @@ import mypageRouter from "./mypageRouter";
 import adminRouter from "./adminRouter";
 import LoadingPage from "../pages/common/LoadingPage";
 import NotFoundPage from "../pages/common/NotFoundPage";
-import RequireAuth from "../pages/mypages/RequireAuth";
+import RequireAuth from "../pages/common/RequireAuth";
 import AdminRequireAuth from "../pages/admin/RequireAdminAuth";
 
 const LandingPage = lazy(() => import("../pages/LandingPage"));
@@ -36,7 +36,7 @@ const root = createBrowserRouter([
         children: accountRouter(),
       },
       {
-        element: <RequireAuth redirectTo="/" />,
+        element: <RequireAuth redirectTo="/account/loginchoice" />,
         children: [
           {
             path: "mypage",

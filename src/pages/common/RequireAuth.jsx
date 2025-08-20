@@ -1,10 +1,10 @@
 import { useEffect } from "react";
 import { useSelector } from "react-redux";
 import { Navigate, Outlet, useLocation } from "react-router-dom";
-import LoadingPage from "../../pages/common/LoadingPage";
+import LoadingPage from "./LoadingPage";
 import { selectIsAuth, selectHydrated } from "../../services/auth/authSlice";
 
-export default function RequireAuth({ redirectTo = "/" }) {
+export default function RequireAuth({ redirectTo = "/account/loginchoice" }) {
   const isAuth = useSelector(selectIsAuth);
   const hydrated = useSelector(selectHydrated);
   const location = useLocation();
