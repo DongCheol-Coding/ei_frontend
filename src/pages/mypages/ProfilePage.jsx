@@ -10,8 +10,16 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(false);
   const [delLoading, setDelLoading] = useState(false);
 
+  const isSocialLogin = !!user?.social;
+
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    if (isSocialLogin) {
+      alert("소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.");
+      return;
+    }
+
     if (pw.length < 8) {
       alert("새 비밀번호는 8자 이상이어야 합니다.");
       return;
@@ -63,6 +71,7 @@ export default function ProfilePage() {
     try {
       await dispatch(logout()).unwrap();
     } catch {}
+
     navigate("/", { replace: true });
   };
 
@@ -92,14 +101,26 @@ export default function ProfilePage() {
               <input
                 id="password"
                 type="password"
-                placeholder="특수문자, 숫자, 영문자 조합된 8 이상 문자"
-                className="w-full h-10 px-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300 placeholder:text-sm"
+                placeholder={
+                  isSocialLogin
+                    ? "소셜 로그인 계정은 비밀번호 변경이 불가합니다."
+                    : "특수문자, 숫자, 영문자 조합된 8 이상 문자"
+                }
+                className={[
+                  "w-full h-10 px-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300 placeholder:text-sm",
+                  isSocialLogin || loading
+                    ? "opacity-60 cursor-not-allowed"
+                    : "",
+                ].join(" ")}
                 value={pw}
                 onChange={(e) => setPw(e.target.value)}
                 autoComplete="new-password"
-                required
+                disabled={isSocialLogin || loading}
+                readOnly={isSocialLogin}
+                required={!isSocialLogin}
               />
             </div>
+
             <div className="p-3">
               <label
                 htmlFor="passwordConfirm"
@@ -110,27 +131,56 @@ export default function ProfilePage() {
               <input
                 id="passwordConfirm"
                 type="password"
-                placeholder="특수문자, 숫자, 영문자 조합된 8 이상 문자"
-                className="w-full h-10 px-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300 placeholder:text-sm"
+                placeholder={
+                  isSocialLogin
+                    ? "소셜 로그인 계정은 비밀번호 변경이 불가합니다."
+                    : "특수문자, 숫자, 영문자 조합된 8 이상 문자"
+                }
+                className={[
+                  "w-full h-10 px-3 bg-white border border-gray-300 rounded-md focus:outline-none focus:ring-1 focus:ring-gray-300 placeholder:text-sm",
+                  isSocialLogin || loading
+                    ? "opacity-60 cursor-not-allowed"
+                    : "",
+                ].join(" ")}
                 value={pw2}
                 onChange={(e) => setPw2(e.target.value)}
                 autoComplete="new-password"
-                required
+                disabled={isSocialLogin || loading}
+                readOnly={isSocialLogin}
+                required={!isSocialLogin}
               />
             </div>
+
             <div className="p-3 flex items-center justify-between">
               <button
                 type="submit"
-                disabled={loading}
-                className="px-3 py-2 text-sm text-white font-bold bg-blue-600  rounded-md hover:bg-blue-700 cursor-pointer"
+                disabled={loading || isSocialLogin}
+                className={[
+                  "px-3 py-2 text-sm text-white font-bold rounded-md",
+                  isSocialLogin || loading
+                    ? "bg-blue-400 cursor-not-allowed"
+                    : "bg-blue-600 hover:bg-blue-700 cursor-pointer",
+                ].join(" ")}
+                aria-disabled={loading || isSocialLogin}
+                title={
+                  isSocialLogin
+                    ? "소셜 로그인 계정은 비밀번호 변경이 불가합니다."
+                    : undefined
+                }
               >
                 {loading ? "요청 중.." : "비밀번호 변경"}
               </button>
+
               <button
                 type="button"
                 onClick={handleDeleteAccount}
                 disabled={delLoading || loading}
-                className="px-3 py-2 text-sm text-gray-400 rounded-md border border-gray-300 hover:font-bold cursor-pointer"
+                className={[
+                  "px-3 py-2 text-sm rounded-md border border-gray-300",
+                  delLoading || loading
+                    ? "text-gray-300 cursor-not-allowed"
+                    : "text-gray-400 hover:font-bold cursor-pointer",
+                ].join(" ")}
               >
                 {delLoading ? "탈퇴 처리중..." : "회원 탈퇴"}
               </button>

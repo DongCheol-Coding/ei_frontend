@@ -12,7 +12,7 @@ export default function KakaoAuthPage() {
 
   // 진행률/상태/에러
   const [progress, setProgress] = useState(12);
-  const [status, setStatus] = useState("카카오 인증 확인 중...");
+  const [status, setStatus] = useState("로그인 인증 확인 중...");
   const [error, setError] = useState("");
 
   // 중복 네비게이션 방지
@@ -24,7 +24,7 @@ export default function KakaoAuthPage() {
       setProgress((p) => {
         if (doneRef.current) return p;
         const next = Math.min(p + Math.max(1, Math.round((95 - p) * 0.08)), 95);
-        if (next < 30) setStatus("카카오 인증 확인 중...");
+        if (next < 30) setStatus("로그인 인증 확인 중...");
         else if (next < 65) setStatus("세션 설정 및 사용자 정보 동기화...");
         else setStatus("대시보드로 이동 준비 중...");
         return next;
@@ -85,7 +85,7 @@ export default function KakaoAuthPage() {
           <div className="h-9 w-9 rounded-full border-2 border-gray-200 grid place-items-center">
             <div className="h-5 w-5 rounded-full border-2 border-gray-300 border-t-transparent animate-spin" />
           </div>
-          <h1 className="text-lg font-semibold">카카오 로그인 처리중</h1>
+          <h1 className="text-lg font-semibold">로그인 처리중</h1>
         </div>
 
         {/* 상태 문구 (스크린리더 공지) */}

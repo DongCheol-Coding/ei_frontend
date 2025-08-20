@@ -1,6 +1,7 @@
 import backgroundImg from "../../assets/data/ai-main-background-pc.avif";
 import dalpha from "../../assets/data/DALPHA.avif";
 import thoughtly from "../../assets/data/thoughtly.avif";
+import StickyCard from "../../components/course/StickyCard";
 
 export default function DataAIPage() {
   return (
@@ -77,6 +78,14 @@ export default function DataAIPage() {
           100% 취업 보장받고 시작하기
         </button>
       </div>
+      <StickyCard
+        top={110}
+        dDay={5}
+        onCtaClick={() => {
+          const el = document.getElementById("apply");
+          if (el) el.scrollIntoView({ behavior: "smooth" });
+        }}
+      />
     </section>
   );
 }
