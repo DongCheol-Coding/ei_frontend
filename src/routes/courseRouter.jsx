@@ -6,6 +6,9 @@ const DataAIPage = lazy(() => import("../pages/courses/DataAIPage"));
 const FrontendPage = lazy(() => import("../pages/courses/FrontendPage"));
 const FullStackPage = lazy(() => import("../pages/courses/FullStackPage"));
 const PaymentPage = lazy(() => import("../pages/courses/PaymentPage"));
+const KakaoPayApprovePage = lazy(() =>
+  import("../pages/courses/KakaoPayApprovePage")
+);
 
 export default function courseRouter() {
   return [
@@ -46,6 +49,14 @@ export default function courseRouter() {
       element: (
         <Suspense fallback={<LoadingPage />}>
           <PaymentPage />
+        </Suspense>
+      ),
+    },
+    {
+      path: "kakaopay",
+      element: (
+        <Suspense fallback={<LoadingPage />}>
+          <KakaoPayApprovePage />
         </Suspense>
       ),
     },
