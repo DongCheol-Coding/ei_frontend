@@ -146,7 +146,6 @@ export default function AdminCourseLecturesPage() {
                   <tr>
                     <th className="text-left px-3 py-2 w-16">순서</th>
                     <th className="text-left px-3 py-2">강의명</th>
-                    <th className="text-left px-3 py-2 w-28">영상 길이</th>
                     <th className="text-left px-3 py-2 w-24">삭제</th>
                   </tr>
                 </thead>
@@ -156,12 +155,25 @@ export default function AdminCourseLecturesPage() {
                       <td className="px-3 py-2 whitespace-nowrap">
                         {l.orderIndex}
                       </td>
-                      <td className="px-3 py-2">{l.title || "—"}</td>
 
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        {toHMS(l.durationSec)}
+                      {/* 기존 */}
+                      {/* <td className="px-3 py-2">{l.title || "—"}</td> */}
+
+                      {/* 변경: 제목 클릭 시 상세 페이지로 이동 */}
+                      <td className="px-3 py-2">
+                        <button
+                          type="button"
+                          onClick={() =>
+                            navigate(`/admin/lectures/${l.id}`, {
+                              state: { courseId, courseTitle },
+                            })
+                          }
+                          className="text-blue-600 hover:underline"
+                          title="강의 상세 보기"
+                        >
+                          {l.title || "—"}
+                        </button>
                       </td>
-
                       <td className="px-3 py-2 whitespace-nowrap">
                         <button
                           type="button"

@@ -270,3 +270,65 @@ export async function deleteLecture(lectureId, opts = {}) {
     throw new Error(msg);
   }
 }
+
+export async function getLectureDetail(lectureId, opts = {}) {
+  if (
+    lectureId === undefined ||
+    lectureId === null ||
+    String(lectureId).trim() === ""
+  ) {
+    throw new Error("유효한 lectureId가 필요합니다.");
+  }
+
+  const headers = {};
+  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+
+  const lid = encodeURIComponent(String(lectureId).trim());
+  const url = `/api/lectures/${lid}`;
+
+  const toNum = (v, d = 0) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
+  };
+  const clamp01 = (n) => {
+    const x = Number(n);
+    if (!Number.isFinite(x)) return 0;
+    if (x < 0) return 0;
+    if (x > 1) return 1;
+    return x;
+  };
+
+  try {
+    const res = await api.get(url, { headers, signal: opts.signal });
+    // 서버 응답: { status, success, message, data: LectureDetailDto }
+    const d = res?.data?.data ?? {};
+
+    return {
+      id: toNum(d?.id, 0),
+      courseId: toNum(d?.courseId, 0),
+      title: d?.title ?? "",
+      description: d?.description ?? null,
+      durationSec: toNum(d?.durationSec, 0),
+      videoUrl: d?.videoUrl ?? null,
+      progress: clamp01(d?.progress ?? 0),
+      orderIndex: toNum(d?.orderIndex, 0),
+      // 서버가 isPublic/public 필드를 줄 수도 있으니 방어적으로 매핑
+      isPublic:
+        typeof d?.isPublic === "boolean"
+          ? d.isPublic
+          : typeof d?.public === "boolean"
+          ? d.public
+          : undefined,
+    };
+  } catch (err) {
+    const status = err?.response?.status;
+    let msg =
+      err?.response?.data?.message ||
+      err?.message ||
+      "강의 정보를 불러오지 못했습니다.";
+    if (status === 404) msg = "해당 강의를 찾을 수 없습니다.";
+    if (status === 401) msg = "인증이 필요합니다.";
+    if (status === 403) msg = "권한이 없습니다.";
+    throw new Error(msg);
+  }
+}

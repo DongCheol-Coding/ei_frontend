@@ -10,6 +10,8 @@ const AdminCourseLecturesPage = lazy(() =>
   import("../pages/admin/AdminCourseLecturesPage")
 );
 
+import AdminLectureDetailPage from "../pages/admin/AdminLectureDetailPage";
+
 export default function adminRouter() {
   return [
     {
@@ -41,6 +43,14 @@ export default function adminRouter() {
       element: (
         <Suspense fallback={<LoadingPage />}>
           <AdminCourseLecturesPage />
+        </Suspense>
+      ),
+    },
+    {
+      path: "lectures/:lectureId",
+      element: (
+        <Suspense fallback={<LoadingPage />}>
+          <AdminLectureDetailPage />
         </Suspense>
       ),
     },
