@@ -105,3 +105,49 @@ export async function deleteAccount(opts = {}) {
     throw err;
   }
 }
+
+export async function getMyPayments(argOrOpts = {}) {
+  // 인자 정규화: 문자열이면 토큰으로 간주, 객체면 { accessToken|token, signal } 사용
+  let token = null;
+  let signal;
+  if (typeof argOrOpts === "string") {
+    token = argOrOpts;
+  } else if (argOrOpts && typeof argOrOpts === "object") {
+    token = argOrOpts.accessToken ?? argOrOpts.token ?? null;
+    signal = argOrOpts.signal;
+  }
+
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    const res = await api.get("/api/payment/me", { headers, signal });
+    const body = res?.data;
+
+    // 바디 없이 200만 오는 경우까지 허용 → 빈 배열 반환
+    if (!body || typeof body !== "object") {
+      if (res.status >= 200 && res.status < 300) return [];
+      throw new Error(`예상치 못한 응답 형식 (HTTP ${res.status})`);
+    }
+
+    // 서버 표준 포맷: { status, success, message, data }
+    const ok = body.status === 200 || body.success === true;
+    if (!ok) throw new Error(body?.message || "결제 내역을 가져오지 못했습니다.");
+
+    const list = Array.isArray(body.data) ? body.data : [];
+
+    // 응답 정규화(숫자는 number로 변환, 문자열 기본값 지정)
+    return list.map((p) => ({
+      courseId: p?.courseId != null ? Number(p.courseId) : null,
+      courseName: typeof p?.courseName === "string" ? p.courseName : "",
+      price: p?.price != null ? Number(p.price) : null,
+      paymentDate: typeof p?.paymentDate === "string" ? p.paymentDate : null,
+    }));
+  } catch (err) {
+    if (!err?.response) {
+      throw new Error("네트워크/CORS 오류로 결제 내역을 가져오지 못했습니다.");
+    }
+    // 401 등 인증 오류는 basicApi 인터셉터에서 공통 처리
+    throw err;
+  }
+}
