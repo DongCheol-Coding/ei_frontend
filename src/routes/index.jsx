@@ -12,6 +12,7 @@ import LoadingPage from "../pages/common/LoadingPage";
 import NotFoundPage from "../pages/common/NotFoundPage";
 import RequireAuth from "../pages/common/RequireAuth";
 import AdminRequireAuth from "../pages/admin/RequireAdminAuth";
+import LectureListPage from "../pages/mypages/LectureListPage";
 
 const LandingPage = lazy(() => import("../pages/LandingPage"));
 
@@ -58,6 +59,19 @@ const root = createBrowserRouter([
       {
         path: "*",
         element: <NotFoundPage />,
+      },
+    ],
+  },
+  {
+    element: <RequireAuth redirectTo="/account/loginchoice" />,
+    children: [
+      {
+        path: "course/:courseId/lectures",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <LectureListPage />
+          </Suspense>
+        ),
       },
     ],
   },

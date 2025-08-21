@@ -1,7 +1,7 @@
 // src/pages/IngCoursePage.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { useOutletContext } from "react-router-dom";
+import { useOutletContext, useNavigate } from "react-router-dom";
 import { getMyCourses } from "../../services/api/myPageApi";
 
 const FALLBACK_IMG =
@@ -10,6 +10,7 @@ const FALLBACK_IMG =
 export default function IngCoursePage() {
   const { coursesProgress: initial = [] } = useOutletContext() ?? {};
   const accessToken = useSelector((s) => s.auth?.accessToken) ?? null;
+  const navigate = useNavigate();
 
   const [rows, setRows] = useState(initial);
   const [loading, setLoading] = useState(false);
@@ -124,12 +125,22 @@ export default function IngCoursePage() {
                 </div>
               </div>
 
-              {/* 오른쪽: 버튼(기능 없음) */}
+              {/* 오른쪽*/}
               <div className="w-full sm:w-auto flex sm:flex-col gap-3 sm:justify-center sm:items-center">
                 <button
                   type="button"
                   className="flex-1 sm:flex-none px-5 py-3 rounded-lg bg-black text-white font-semibold hover:bg-gray-900"
-                  onClick={() => {}}
+                  onClick={() =>
+                    navigate(`/course/${c?.courseId}/lectures`, {
+                      state: {
+                        courseId: c?.courseId,
+                        courseTitle: c?.courseTitle ?? "",
+                        imageUrl: c?.imageUrl ?? null,
+                      },
+                      replace: false,
+                    })
+                  }
+                  disabled={!c?.courseId}
                 >
                   강의 영상보기
                 </button>
