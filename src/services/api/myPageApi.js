@@ -132,7 +132,8 @@ export async function getMyPayments(argOrOpts = {}) {
 
     // 서버 표준 포맷: { status, success, message, data }
     const ok = body.status === 200 || body.success === true;
-    if (!ok) throw new Error(body?.message || "결제 내역을 가져오지 못했습니다.");
+    if (!ok)
+      throw new Error(body?.message || "결제 내역을 가져오지 못했습니다.");
 
     const list = Array.isArray(body.data) ? body.data : [];
 
@@ -146,6 +147,57 @@ export async function getMyPayments(argOrOpts = {}) {
   } catch (err) {
     if (!err?.response) {
       throw new Error("네트워크/CORS 오류로 결제 내역을 가져오지 못했습니다.");
+    }
+    // 401 등 인증 오류는 basicApi 인터셉터에서 공통 처리
+    throw err;
+  }
+}
+
+export async function getMyCourses(argOrOpts = {}) {
+  // 인자 정규화
+  let token = null;
+  let signal;
+  if (typeof argOrOpts === "string") {
+    token = argOrOpts;
+  } else if (argOrOpts && typeof argOrOpts === "object") {
+    token = argOrOpts.accessToken ?? argOrOpts.token ?? null;
+    signal = argOrOpts.signal;
+  }
+
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  try {
+    const res = await api.get("/api/course/me", { headers, signal });
+    const body = res?.data;
+
+    // 바디 없이 2xx만 오는 경우까지 허용 → 빈 배열 반환
+    if (!body || typeof body !== "object") {
+      if (res.status >= 200 && res.status < 300) return [];
+      throw new Error(`예상치 못한 응답 형식 (HTTP ${res.status})`);
+    }
+
+    // 표준 포맷 체크
+    const ok = body.status === 200 || body.success === true;
+    if (!ok)
+      throw new Error(body?.message || "코스 목록을 가져오지 못했습니다.");
+
+    const list = Array.isArray(body?.data?.content) ? body.data.content : [];
+
+    // 응답 정규화
+    return list.map((c) => ({
+      courseId: c?.courseId != null ? Number(c.courseId) : null,
+      courseTitle: typeof c?.courseTitle === "string" ? c.courseTitle : "",
+      progress:
+        c?.progress != null && !Number.isNaN(Number(c.progress))
+          ? Number(c.progress)
+          : 0,
+      completedCount: c?.completedCount != null ? Number(c.completedCount) : 0,
+      totalCount: c?.totalCount != null ? Number(c.totalCount) : 0,
+    }));
+  } catch (err) {
+    if (!err?.response) {
+      throw new Error("네트워크/CORS 오류로 코스 목록을 가져오지 못했습니다.");
     }
     // 401 등 인증 오류는 basicApi 인터셉터에서 공통 처리
     throw err;
