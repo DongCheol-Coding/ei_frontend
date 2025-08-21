@@ -1,18 +1,18 @@
-// src/components/admin/CourseCreateModal.jsx
 import { useEffect, useRef, useState } from "react";
-import { createCourse } from "../../services/api/adminCourseApi";
+import { createLectureWithVideo } from "../../services/api/adminCourseApi";
 
-const krw = (n) => new Intl.NumberFormat("ko-KR").format(Number(n ?? 0));
-
-export default function CourseCreateModal({
+export default function LectureCreateModal({
   open,
   onClose,
   token,
+  courseId,
   onCreated, // 성공 시 호출(목록 새로고침 등)
 }) {
   const [title, setTitle] = useState("");
   const [description, setDescription] = useState("");
-  const [priceStr, setPriceStr] = useState(""); // 입력 문자열
+  const [orderIndexStr, setOrderIndexStr] = useState("0"); // 문자열 입력 후 숫자 변환
+  const [isPublic, setIsPublic] = useState(true);
+
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState("");
 
@@ -34,7 +34,8 @@ export default function CourseCreateModal({
     if (!open) {
       setTitle("");
       setDescription("");
-      setPriceStr("");
+      setOrderIndexStr("0");
+      setIsPublic(true);
       setFile(null);
       setFileName("");
       setCreating(false);
@@ -51,13 +52,8 @@ export default function CourseCreateModal({
       setFileName("");
       return;
     }
-    if (f.size > 5 * 1024 * 1024) {
-      setError("이미지 파일은 최대 5MB까지 업로드 가능합니다.");
-      e.target.value = "";
-      setFile(null);
-      setFileName("");
-      return;
-    }
+    // 필요 시 용량 제한 추가 가능 (예: 1GB)
+    // if (f.size > 1024 * 1024 * 1024) { ... }
     setError(null);
     setFile(f);
     setFileName(f.name || "");
@@ -66,22 +62,23 @@ export default function CourseCreateModal({
   const handleCreate = async () => {
     if (creating) return;
 
-    const cleanPrice = Number(String(priceStr).replace(/\D/g, "")) || 0;
+    const orderIndex = Number(String(orderIndexStr).replace(/[^\d-]/g, ""));
     if (!title.trim()) return setError("제목을 입력하세요.");
-    if (!description.trim()) return setError("설명을 입력하세요.");
-    if (!cleanPrice) return setError("가격을 입력하세요.");
-    if (!file) return setError("이미지를 선택하세요.");
+    if (Number.isNaN(orderIndex)) return setError("순서를 숫자로 입력하세요.");
+    if (!file) return setError("영상 파일을 선택하세요.");
 
     setCreating(true);
     setProgress(0);
     setError(null);
     try {
-      await createCourse(
+      await createLectureWithVideo(
+        courseId,
         {
           title: title.trim(),
-          description: description.trim(),
-          price: cleanPrice,
-          image: file,
+          description: (description || "").trim(),
+          orderIndex,
+          isPublic,
+          video: file,
         },
         {
           token,
@@ -91,15 +88,13 @@ export default function CourseCreateModal({
       onClose?.();
       onCreated?.(); // 부모에서 목록 새로고침
     } catch (e) {
-      setError(e?.message || "코스 등록에 실패했습니다.");
+      setError(e?.message || "강의 영상 등록에 실패했습니다.");
     } finally {
       setCreating(false);
     }
   };
 
   if (!open) return null;
-
-  const priceNum = Number(String(priceStr).replace(/\D/g, "")) || 0;
 
   return (
     <div className="fixed inset-0 z-50">
@@ -108,13 +103,13 @@ export default function CourseCreateModal({
         <div
           role="dialog"
           aria-modal="true"
-          aria-labelledby="course-create-modal-title"
+          aria-labelledby="lecture-create-modal-title"
           className="w-full max-w-md bg-white rounded-2xl shadow-lg p-5"
         >
           {/* 헤더 */}
           <div className="flex items-start justify-between gap-4 mb-3">
-            <h3 id="course-create-modal-title" className="text-lg font-bold">
-              강의 등록
+            <h3 id="lecture-create-modal-title" className="text-lg font-bold">
+              강의 영상 등록
             </h3>
             <button
               type="button"
@@ -125,48 +120,62 @@ export default function CourseCreateModal({
             </button>
           </div>
 
-          {/* 폼 */}
+          {/* 폼 (CourseCreateModal과 동일 스타일) */}
           <div className="space-y-3">
+            {/* 제목 */}
             <div className="flex flex-col">
               <label className="text-[11px] text-gray-500 mb-1">제목</label>
               <input
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
                 className="border rounded px-2 py-1.5 text-sm"
-                placeholder="예) 동철코딩 백엔드 강의"
+                placeholder="예) 1강. OT & 과정 소개"
               />
             </div>
 
+            {/* 설명 */}
             <div className="flex flex-col">
               <label className="text-[11px] text-gray-500 mb-1">설명</label>
               <textarea
                 value={description}
                 onChange={(e) => setDescription(e.target.value)}
                 className="border rounded px-2 py-1.5 text-sm min-h-24"
-                placeholder="코스 설명을 입력하세요"
+                placeholder="강의 설명을 입력하세요"
               />
             </div>
 
-            <div className="flex flex-col">
-              <label className="text-[11px] text-gray-500 mb-1">가격(원)</label>
-              <input
-                value={priceStr}
-                onChange={(e) => setPriceStr(e.target.value)}
-                inputMode="numeric"
-                className="border rounded px-2 py-1.5 text-sm"
-                placeholder="예) 990000"
-              />
-              <div className="text-xs text-gray-500 mt-1">
-                미리보기: ₩ {krw(priceNum)}
+            {/* 순서 & 공개 */}
+            <div className="grid grid-cols-2 gap-3">
+              <div className="flex flex-col">
+                <label className="text-[11px] text-gray-500 mb-1">순서</label>
+                <input
+                  value={orderIndexStr}
+                  onChange={(e) => setOrderIndexStr(e.target.value)}
+                  inputMode="numeric"
+                  className="border rounded px-2 py-1.5 text-sm"
+                  placeholder="예) 0"
+                />
+              </div>
+              <div className="flex items-end">
+                <label className="inline-flex items-center gap-2 text-sm select-none">
+                  <input
+                    type="checkbox"
+                    checked={isPublic}
+                    onChange={(e) => setIsPublic(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  공개
+                </label>
               </div>
             </div>
 
+            {/* 영상 파일 */}
             <div className="flex flex-col">
-              <label className="text-[11px] text-gray-500 mb-1">이미지</label>
+              <label className="text-[11px] text-gray-500 mb-1">영상 파일</label>
               <input
                 ref={fileInputRef}
                 type="file"
-                accept="image/*"
+                accept="video/*"
                 onChange={handleFileChange}
                 className="block w-full text-sm text-gray-700
                            file:mr-3 file:px-4 file:py-2 file:rounded-lg
@@ -184,7 +193,7 @@ export default function CourseCreateModal({
               <div>
                 {creating && (
                   <div className="text-xs text-gray-500">
-                    등록 중... {progress ? `${progress}%` : ""}
+                    업로드 중... {progress ? `${progress}%` : ""}
                   </div>
                 )}
                 {error && (
@@ -202,7 +211,7 @@ export default function CourseCreateModal({
               disabled={creating}
               className="w-full px-4 py-2 rounded-lg bg-blue-600 text-white disabled:opacity-60"
             >
-              {creating ? "등록 중..." : "등록"}
+              {creating ? "업로드 중..." : "등록"}
             </button>
             <button
               type="button"
@@ -213,7 +222,7 @@ export default function CourseCreateModal({
               취소
             </button>
             <p className="mt-1 text-[11px] text-gray-500">
-              권장: 정사각형, 최대 5MB
+              권장: MP4/H.264, 용량은 인프라 정책에 맞게 제한하세요.
             </p>
           </div>
         </div>

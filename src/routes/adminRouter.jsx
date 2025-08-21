@@ -6,6 +6,9 @@ const AdminDashBoardPage = lazy(() =>
 );
 const UserPage = lazy(() => import("../pages/admin/AdminUserPage"));
 const CoursePage = lazy(() => import("../pages/admin/AdminCoursePage"));
+const AdminCourseLecturesPage = lazy(() =>
+  import("../pages/admin/AdminCourseLecturesPage")
+);
 
 export default function adminRouter() {
   return [
@@ -30,6 +33,14 @@ export default function adminRouter() {
       element: (
         <Suspense fallback={<LoadingPage />}>
           <CoursePage />
+        </Suspense>
+      ),
+    },
+    {
+      path: "course/:courseId/lectures",
+      element: (
+        <Suspense fallback={<LoadingPage />}>
+          <AdminCourseLecturesPage />
         </Suspense>
       ),
     },

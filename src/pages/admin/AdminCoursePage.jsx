@@ -1,13 +1,15 @@
 // src/pages/admin/AdminCoursePage.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { getCourses } from "../../services/api/adminApi";
+import { useNavigate } from "react-router-dom";
+import { getCourses } from "../../services/api/adminCourseApi";
 import CourseCreateModal from "../../components/admin/CourseCreateModal";
 
 const PAGE_SIZE = 10;
 const krw = (n) => new Intl.NumberFormat("ko-KR").format(Number(n ?? 0));
 
 export default function AdminCoursePage() {
+  const navigate = useNavigate();
   const accessToken = useSelector((s) => s.auth?.accessToken) ?? null;
 
   // 검색 폼 상태 (디자인 동일: 인풋 3개 + 버튼 영역)
@@ -245,21 +247,37 @@ export default function AdminCoursePage() {
                 </thead>
                 <tbody>
                   {pageRows.map((c) => (
-                    <tr key={c.id} className="border-t">
-                      <td className="px-3 py-2 whitespace-nowrap">{c.id}</td>
-                      <td className="px-3 py-2">
-                        <div className="flex items-center gap-2">
-                          <Thumb title={c.title} imageUrl={c.imageUrl} />
-                          <div className="font-medium">{c.title || "—"}</div>
-                        </div>
-                      </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
-                        ₩ {krw(c.price)}
-                      </td>
-                      <td className="px-3 py-2">
-                        <PublishedBadge value={c.published} />
-                      </td>
-                    </tr>
+                    <>
+                      <tr key={c.id} className="border-t">
+                        <td className="px-3 py-2 whitespace-nowrap">{c.id}</td>
+                        <td className="px-3 py-2">
+                          <div className="flex items-center gap-2">
+                            <Thumb title={c.title} imageUrl={c.imageUrl} />
+
+                            <button
+                              type="button"
+                              className="font-medium underline text-left"
+                              onClick={(e) => {
+                                e.preventDefault();
+                                e.stopPropagation();
+                                navigate(`/admin/course/${c.id}/lectures`, {
+                                  state: { courseTitle: c.title },
+                                });
+                              }}
+                              title="강의 목록 보기"
+                            >
+                              {c.title || "—"}
+                            </button>
+                          </div>
+                        </td>
+                        <td className="px-3 py-2 whitespace-nowrap">
+                          ₩ {krw(c.price)}
+                        </td>
+                        <td className="px-3 py-2">
+                          <PublishedBadge value={c.published} />
+                        </td>
+                      </tr>
+                    </>
                   ))}
                 </tbody>
               </table>
