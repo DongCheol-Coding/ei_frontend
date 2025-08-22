@@ -47,34 +47,66 @@ export async function approveKakaoPay(
     throw new Error("pg_token 이 필요합니다.");
   }
 
-  // DTO가 SnakeCaseStrategy이므로 프런트도 snake_case 키로 전송
-  const payload = {
+  // JSON 본문 + 쿼리스트링 동시에 전달(@RequestBody / @RequestParam 모두 대응)
+  const json = {
     pg_token: pgToken,
+    ...(cid && { cid }),
+    ...(tid && { tid }),
+    ...(partnerOrderId && { partner_order_id: partnerOrderId }),
+    ...(partnerUserId && { partner_user_id: partnerUserId }),
   };
-  if (cid) payload.cid = cid;
-  if (tid) payload.tid = tid;
-  if (partnerOrderId) payload.partner_order_id = partnerOrderId;
-  if (partnerUserId) payload.partner_user_id = partnerUserId;
 
   try {
-    const res = await api.post("/api/payment/approve", payload, {
-      withCredentials: true, // 쿠키 AT 인증
+    const res = await api.post("/api/payment/approve", json, {
+      withCredentials: true,
       signal: opts.signal,
+      headers: { "Content-Type": "application/json" },
+      // 쿼리스트링으로도 전달(@RequestParam 대응)
+      params: { pg_token: pgToken },
     });
 
     const body = res?.data;
-    // ApiResponse<String> 형태 or 단순 문자열 모두 대응
     const message =
       body?.data ||
       body?.message ||
       (typeof body === "string" ? body : "결제가 완료되었습니다.");
-
     return message;
   } catch (err) {
     const msg =
       err?.response?.data?.message ||
       err?.message ||
       "결제 승인에 실패했습니다.";
+
+    // 폴백: 서버가 x-www-form-urlencoded만 받는 경우 재시도
+    if (msg.includes("pg_token") || msg.includes("파라미터")) {
+      const form = new URLSearchParams();
+      form.set("pg_token", pgToken);
+      if (cid) form.set("cid", cid);
+      if (tid) form.set("tid", tid);
+      if (partnerOrderId) form.set("partner_order_id", partnerOrderId);
+      if (partnerUserId) form.set("partner_user_id", partnerUserId);
+
+      try {
+        const res2 = await api.post("/api/payment/approve", form, {
+          withCredentials: true,
+          signal: opts.signal,
+          headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        });
+        const body2 = res2?.data;
+        const message2 =
+          body2?.data ||
+          body2?.message ||
+          (typeof body2 === "string" ? body2 : "결제가 완료되었습니다.");
+        return message2;
+      } catch (err2) {
+        const msg2 =
+          err2?.response?.data?.message ||
+          err2?.message ||
+          "결제 승인에 실패했습니다.";
+        throw new Error(msg2);
+      }
+    }
+
     throw new Error(msg);
   }
 }
