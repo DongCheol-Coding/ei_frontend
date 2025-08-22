@@ -22,17 +22,15 @@ export default function KakaoPayApprovePage() {
         setLoading(true);
         const message = await approveKakaoPay({ orderId, pgToken });
         setMsg(message || "결제가 완료되었습니다.");
-        // 성공 후 이동이 필요하면 주석 해제
-        // navigate("/course/success", { replace: true });
+
+        navigate("/mypage/ingcourse", { replace: true });
       } catch (e) {
         setMsg(e.message ?? "결제 승인에 실패했습니다.");
-        // 실패 페이지로 보내고 싶다면:
-        // navigate("/course/fail", { replace: true });
       } finally {
         setLoading(false);
       }
     })();
-  }, [orderId, pgToken]);
+  }, [orderId, pgToken, navigate]);
 
   if (!orderId || !pgToken) {
     return (
@@ -60,8 +58,6 @@ export default function KakaoPayApprovePage() {
             >
               홈으로
             </button>
-            {/* 주문 상세로 이동이 필요하면 사용 */}
-            {/* <button className="px-4 py-2 rounded border" onClick={() => navigate(`/orders/${orderId}`)}>주문 보기</button> */}
           </div>
         </>
       )}
