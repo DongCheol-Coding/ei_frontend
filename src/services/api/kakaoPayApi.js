@@ -39,22 +39,21 @@ export async function readyKakaoPay(courseId, opts = {}) {
   }
 }
 
-export async function approveKakaoPay({ pgToken } = {}, opts = {}) {
+export async function approveKakaoPay({ orderId, pgToken } = {}, opts = {}) {
+  if (!orderId || typeof orderId !== "string") {
+    throw new Error("orderId 가 필요합니다.");
+  }
   if (!pgToken || typeof pgToken !== "string") {
     throw new Error("pg_token 이 필요합니다.");
   }
 
-  const payload = {
-    pg_token: pgToken,
-  };
-
   try {
-    const res = await api.post("/api/payment/approve", payload, {
+    const res = await api.post("/api/payment/approve", null, {
       withCredentials: true,
       signal: opts.signal,
-      headers: { "Content-Type": "application/json" },
-      // params: undefined, // 혹시 기본 params가 섞여 들어가는 걸 명시적으로 차단하고 싶다면 주석 해제
+      params: { orderId, pg_token: pgToken }, 
     });
+
 
     const body = res?.data;
     const message =
