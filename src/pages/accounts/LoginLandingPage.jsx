@@ -53,14 +53,6 @@ export default function LoginLandingPage() {
         아직 계정이 없으신가요?
         <span className="text-blue-600 ml-1">회원가입</span>
       </button>
-
-      {/* 비회원 상담 */}
-      {/* <button
-          type="button"
-          className="w-full text-[18px] text-gray-500 font-bold py-3 border border-gray-300 rounded-lg hover:bg-[#e3fee1] transition cursor-pointer"
-        >
-          비회원으로 상담받기
-        </button> */}
     </div>
   );
 }
