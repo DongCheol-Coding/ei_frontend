@@ -9,7 +9,7 @@ import StickyCard from "../../components/course/StickyCard";
 
 export default function FrontendPage() {
   const navigate = useNavigate();
-  const courseId = 1;
+  const courseId = 3;
 
   const [title, setTitle] = useState("");
   const [price, setPrice] = useState(0);
