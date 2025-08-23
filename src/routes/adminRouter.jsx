@@ -7,7 +7,7 @@ const AdminDashBoardPage = lazy(() =>
 const UserPage = lazy(() => import("../pages/admin/AdminUserPage"));
 const CoursePage = lazy(() => import("../pages/admin/AdminCoursePage"));
 const AdminCourseLecturesPage = lazy(() =>
-  import("../pages/admin/AdminCourseLecturesPage")
+  import("../pages/admin/AdminLecturesPage")
 );
 
 import AdminLectureDetailPage from "../pages/admin/AdminLectureDetailPage";

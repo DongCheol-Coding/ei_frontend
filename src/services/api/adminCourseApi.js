@@ -1,5 +1,10 @@
 import { api } from "./basicApi";
 
+/* ============================================================
+ * 01. 강의 목록 조회 (GET /api/course)
+ *     - getCourses(opts)
+ *     - 반환: [{ id, title, imageUrl, price, published }, ...]
+ * ========================================================== */
 export async function getCourses(opts = {}) {
   const headers = {};
   if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
@@ -30,6 +35,12 @@ export async function getCourses(opts = {}) {
   }
 }
 
+/* ============================================================
+ * 02. 강의 생성 (POST /api/course, multipart/form-data)
+ *     - createCourse(payload, opts)
+ *     - payload: { title, description, price, image }
+ *     - 반환: { id, title, description, imageUrl, price, published }
+ * ========================================================== */
 export async function createCourse(payload, opts = {}) {
   const { title, description, price, image } = payload ?? {};
 
@@ -88,6 +99,11 @@ export async function createCourse(payload, opts = {}) {
   }
 }
 
+/* ============================================================
+ * 03. 특정 코스의 강의 목록 조회 (GET /api/courses/{courseId}/lectures)
+ *     - getCourseLectures(courseId, opts)
+ *     - 반환: [{ id, title, orderIndex, durationSec, progress }, ...]
+ * ========================================================== */
 export async function getCourseLectures(courseId, opts = {}) {
   if (
     courseId === undefined ||
@@ -144,6 +160,12 @@ export async function getCourseLectures(courseId, opts = {}) {
   }
 }
 
+/* ============================================================
+ * 04. (ADMIN) 강의+영상 동시 업로드 (POST /api/courses/{courseId}/lectures/with-video)
+ *     - createLectureWithVideo(courseId, fields, opts)
+ *     - fields: { title*, description, orderIndex, isPublic, video }
+ *     - data(JSON)에 durationSec, sizeBytes도 포함해서 전송
+ * ========================================================== */
 export async function createLectureWithVideo(courseId, fields = {}, opts = {}) {
   if (
     courseId === undefined ||
@@ -178,6 +200,66 @@ export async function createLectureWithVideo(courseId, fields = {}, opts = {}) {
     return x;
   };
 
+  // ---- 로컬 영상 파일에서 메타데이터(durationSec) 추출
+  async function getVideoDurationSec(fileOrBlob, { timeoutMs = 8000 } = {}) {
+    return new Promise((resolve) => {
+      try {
+        const url = URL.createObjectURL(fileOrBlob);
+        const v = document.createElement("video");
+        v.preload = "metadata";
+        v.muted = true;
+
+        let done = false;
+        const cleanup = () => {
+          if (done) return;
+          done = true;
+          URL.revokeObjectURL(url);
+          v.removeAttribute("src");
+          try {
+            v.load();
+          } catch {}
+        };
+
+        const finish = (sec) => {
+          cleanup();
+          const n = Number(sec);
+          resolve(Number.isFinite(n) && n > 0 ? n : 0);
+        };
+
+        const onLoaded = () => finish(v.duration);
+        const onError = () => finish(0);
+
+        v.addEventListener("loadedmetadata", onLoaded, { once: true });
+        v.addEventListener("error", onError, { once: true });
+
+        // 타임아웃 안전장치
+        const timer = setTimeout(() => finish(0), timeoutMs);
+        const clear = () => clearTimeout(timer);
+        v.addEventListener("loadedmetadata", clear, { once: true });
+        v.addEventListener("error", clear, { once: true });
+
+        v.src = url;
+        // 일부 브라우저에서 명시적 load 필요
+        try {
+          v.load();
+        } catch {}
+      } catch {
+        resolve(0);
+      }
+    });
+  }
+
+  // ---- video 메타데이터 계산(sizeBytes, durationSec)
+  let sizeBytes = 0;
+  let durationSec = 0;
+
+  if (fields.video instanceof Blob) {
+    sizeBytes = Number(fields.video.size) || 0;
+    // 소수점이 나올 수 있으니 서버가 정수 초를 원하면 반올림
+    const dur = await getVideoDurationSec(fields.video);
+    durationSec = Math.round(dur);
+  }
+
   // ---- payload(JSON) 구성 → fd.append("data", JSON.stringify(...))
   const payload = {
     title: fields.title.trim(),
@@ -185,6 +267,10 @@ export async function createLectureWithVideo(courseId, fields = {}, opts = {}) {
       typeof fields.description === "string" ? fields.description.trim() : "",
     orderIndex: toNum(fields.orderIndex, 0),
     isPublic: toBool(fields.isPublic),
+
+    // 새로 추가된 메타데이터
+    durationSec: toNum(durationSec, 0),
+    sizeBytes: toNum(sizeBytes, 0),
   };
 
   const fd = new FormData();
@@ -213,7 +299,7 @@ export async function createLectureWithVideo(courseId, fields = {}, opts = {}) {
     });
 
     // 서버 예시 응답:
-    // { status, success, message, data: { id, courseId, title, description, durationSec, videoUrl, progress } }
+    // { status, success, message, data: { id, courseId, title, description, durationSec, videoUrl, progress, orderIndex } }
     const d = res?.data?.data ?? {};
 
     return {
@@ -221,10 +307,9 @@ export async function createLectureWithVideo(courseId, fields = {}, opts = {}) {
       courseId: toNum(d?.courseId, toNum(courseId)),
       title: d?.title ?? payload.title,
       description: d?.description ?? payload.description,
-      durationSec: toNum(d?.durationSec, 0),
+      durationSec: toNum(d?.durationSec, payload.durationSec),
       videoUrl: d?.videoUrl ?? null,
       progress: clamp01(d?.progress ?? 0),
-      // 서버가 orderIndex를 내려주면 사용, 아니면 요청 값 사용
       orderIndex: toNum(d?.orderIndex, payload.orderIndex),
     };
   } catch (err) {
@@ -236,6 +321,11 @@ export async function createLectureWithVideo(courseId, fields = {}, opts = {}) {
   }
 }
 
+/* ============================================================
+ * 05. (ADMIN) 강의 삭제 (DELETE /api/lectures/{lectureId})
+ *     - deleteLecture(lectureId, opts)
+ *     - 반환: true (성공 시)
+ * ========================================================== */
 export async function deleteLecture(lectureId, opts = {}) {
   if (
     lectureId === undefined ||
@@ -271,6 +361,11 @@ export async function deleteLecture(lectureId, opts = {}) {
   }
 }
 
+/* ============================================================
+ * 06. 강의 상세 조회 (GET /api/lectures/{lectureId})
+ *     - getLectureDetail(lectureId, opts)
+ *     - 반환: { id, courseId, title, description, durationSec, videoUrl, progress, orderIndex, isPublic? }
+ * ========================================================== */
 export async function getLectureDetail(lectureId, opts = {}) {
   if (
     lectureId === undefined ||

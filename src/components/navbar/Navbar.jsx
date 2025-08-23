@@ -41,7 +41,7 @@ export default function Navbar() {
   const name = useSelector((s) => s.auth?.user?.name) ?? "비회원";
 
   return (
-    <nav className="fixed top-[44px] left-0 w-full bg-white border-b-1 border-gray-200 z-40">
+    <nav className="fixed top-[44px] left-0 w-full bg-white border-b-1 border-gray-200 z-70">
       <div className="container max-w-8xl mx-auto px-10">
         <div className="flex items-center justify-between h-[54px]">
           {/* 로고 */}
@@ -113,7 +113,7 @@ export default function Navbar() {
                     group-focus-within:visible group-focus-within:opacity-100 group-focus-within:translate-y-0
                     transition duration-150
                     absolute right-0 top-full mt-2 w-44
-                    bg-white border border-gray-200 rounded-lg shadow-lg z-50
+                    bg-white border border-gray-200 rounded-lg shadow-lg z-60
                      text-center
                   "
                 >
@@ -178,7 +178,7 @@ export default function Navbar() {
           <>
             {/* 바깥 클릭 닫힘용 오버레이 */}
             <div
-              className="fixed inset-0 lg:hidden z-40"
+              className="fixed inset-0 lg:hidden z-60"
               onClick={() => setOpen(false)}
             />
             {/* 패널 */}

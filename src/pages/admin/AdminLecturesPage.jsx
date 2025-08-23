@@ -146,7 +146,8 @@ export default function AdminCourseLecturesPage() {
                   <tr>
                     <th className="text-left px-3 py-2 w-16">순서</th>
                     <th className="text-left px-3 py-2">강의명</th>
-                    <th className="text-left px-3 py-2 w-24">삭제</th>
+                    <th className="text-center px-3 py-2 w-18">영상 길이</th>
+                    <th className="text-center px-3 py-2 w-20">삭제</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -174,12 +175,13 @@ export default function AdminCourseLecturesPage() {
                           {l.title || "—"}
                         </button>
                       </td>
-                      <td className="px-3 py-2 whitespace-nowrap">
+                      <td className="px-3 py-2 text-center">{l.durationSec}</td>
+                      <td className="px-3 py-2 whitespace-nowrap text-center">
                         <button
                           type="button"
                           onClick={() => handleDeleteClick(l.id)}
                           disabled={deletingId === l.id}
-                          className="px-2 py-1 border rounded hover:bg-gray-100 disabled:opacity-60"
+                          className="px-2 py-1 rounded text-red-500 hover:text-red-600 hover:underline hover:cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed"
                         >
                           {deletingId === l.id ? "삭제 중..." : "삭제"}
                         </button>
