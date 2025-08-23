@@ -73,7 +73,7 @@ export default function StickyCard({
 
         <div className="space-y-1">
           <div className="text-gray-400 line-through">
-            {priceFmt(displayOriginalPrice)}원
+            {priceFmt(displayOriginalPrice)}만원
           </div>
           <div className="text-black text-[18px] font-extrabold">
             {priceNow === 0 ? "0원" : `${priceFmt(priceNow)}원`}

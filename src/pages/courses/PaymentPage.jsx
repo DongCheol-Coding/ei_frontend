@@ -214,16 +214,16 @@ export default function PaymentPage() {
             <h2 className="text-lg font-bold">결제 정보</h2>
 
             <div className="mt-6 space-y-4">
-              <Row label="상품 금액" value={`${krw(price)}원`} />
+              <Row label="상품 금액" value={`${krw(price)}만원`} />
               <div className="h-px w-full bg-gray-200" />
               <Row
                 label="최종 결제금액"
                 valueClass="text-2xl font-extrabold text-gray-900"
-                value={`${krw(price)}원`}
+                value={`${krw(price)}만원`}
               />
               <Row
                 label="12개월 할부 이용시"
-                value={`${krw(monthly)}원`}
+                value={`${krw(monthly)}만원`}
                 hint
               />
             </div>
