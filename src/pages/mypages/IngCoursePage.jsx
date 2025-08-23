@@ -23,6 +23,7 @@ export default function IngCoursePage() {
 
     setLoading(true);
     setErr(null);
+
     getMyCourses({ accessToken, signal: ac.signal })
       .then((res) => {
         const list = Array.isArray(res)
@@ -105,6 +106,8 @@ export default function IngCoursePage() {
                   src={img}
                   alt="course thumbnail"
                   className="w-full h-36 sm:h-40 object-cover rounded-lg"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => (e.currentTarget.src = FALLBACK_IMG)}
                 />
               </div>
