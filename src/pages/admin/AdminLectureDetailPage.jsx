@@ -2,7 +2,7 @@
 import { useEffect, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { getLectureDetail } from "../../services/api/adminCourseApi";
+import { getLectureDetail } from "../../services/api/courseApi";
 
 const toHMS = (sec) => {
   const s = Math.max(0, Number(sec || 0));

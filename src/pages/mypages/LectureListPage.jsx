@@ -5,7 +5,7 @@ import { useSelector } from "react-redux";
 import {
   getCourseLectures,
   getLectureDetail,
-} from "../../services/api/adminCourseApi";
+} from "../../services/api/courseApi";
 
 const toHMS = (sec) => {
   const s = Math.max(0, Number(sec || 0));

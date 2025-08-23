@@ -427,3 +427,56 @@ export async function getLectureDetail(lectureId, opts = {}) {
     throw new Error(msg);
   }
 }
+
+/* ============================================================
+ * 07. 코스 미리보기 (GET /api/course/{courseId}/preview)
+ *     - getCoursePreview(courseId, opts)
+ *     - 반환: { id, title, description, price, imageUrl, lectureCount, totalDurationSec }
+ * ========================================================== */
+export async function getCoursePreview(courseId, opts = {}) {
+  if (
+    courseId === undefined ||
+    courseId === null ||
+    String(courseId).trim() === ""
+  ) {
+    throw new Error("유효한 courseId가 필요합니다.");
+  }
+
+  const headers = {};
+  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+
+  const toNum = (v, d = 0) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
+  };
+  const toInt = (v, d = 0) => Math.floor(toNum(v, d));
+
+  const cid = encodeURIComponent(String(courseId).trim());
+  const url = `/api/course/${cid}/preview`; // ← 단수(course) 엔드포인트
+
+  try {
+    const res = await api.get(url, { headers, signal: opts.signal });
+    // 서버 응답: { status, success, message, data: { ... } }
+    const d = res?.data?.data ?? {};
+
+    return {
+      id: toNum(d?.id, 0),
+      title: d?.title ?? "",
+      description: d?.description ?? "",
+      price: typeof d?.price === "number" ? d.price : toNum(d?.price, 0),
+      imageUrl: d?.imageUrl ?? null,
+      lectureCount: toInt(d?.lectureCount, 0),
+      totalDurationSec: toInt(d?.totalDurationSec, 0),
+    };
+  } catch (err) {
+    const status = err?.response?.status;
+    let msg =
+      err?.response?.data?.message ||
+      err?.message ||
+      "코스 미리보기 정보를 불러오지 못했습니다.";
+    if (status === 404) msg = "해당 코스를 찾을 수 없습니다.";
+    if (status === 401) msg = "인증이 필요합니다.";
+    if (status === 403) msg = "권한이 없습니다.";
+    throw new Error(msg);
+  }
+}

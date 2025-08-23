@@ -1,34 +1,62 @@
-// src/pages/PaymentPage.jsx
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import kakaopayIcon from "../../assets/payment_icon_yellow_small.png";
-import naverpayIcon from "../../assets/naver_pay_icon.svg";
+import naverpayIcon from "../../assets/payment_icon_yellow_small.png";
 import tosspayIcon from "../../assets/tosspay_icon.svg";
 import { readyKakaoPay } from "../../services/api/kakaoPayApi";
+import { getCoursePreview } from "../../services/api/courseApi";
 
 /** 천 단위 콤마, 원화 표기 */
 const krw = (n) => new Intl.NumberFormat("ko-KR").format(n);
 
 export default function PaymentPage() {
-  // --- 가짜 데이터(디자인용) ---
-  const courseTitle = "[웹개발 취업] 1:1 관리형 부트캠프_2507_FULL_FULL STACK";
-  const price = 2_590_000;
+  const [searchParams] = useSearchParams();
+  const courseIdParam = searchParams.get("courseId");
+  const courseId = Number(courseIdParam) || 0;
+
+  // --- 코스 프리뷰로 치환되는 표시 데이터 ---
+  const [courseTitle, setCourseTitle] = useState("");
+  const [price, setPrice] = useState(0);
   const monthly = useMemo(() => Math.floor(price / 12), [price]);
 
-  // --- UI 상태(디자인용) ---
+  // --- UI 상태 ---
   const [agree, setAgree] = useState(false);
   const [refCode, setRefCode] = useState("");
   const [payMethod, setPayMethod] = useState(null); // 'kakaopay' | null
   const [loading, setLoading] = useState(false);
 
-  // 약관 + 카카오페이 선택 시에만 활성화
-  const canSubmit = agree && payMethod === "kakaopay";
+  // 프리뷰 불러오기
+  useEffect(() => {
+    if (!courseId) return;
+    (async () => {
+      try {
+        const preview = await getCoursePreview(courseId);
+        setCourseTitle(preview?.title || "");
+        const p =
+          typeof preview?.price === "number"
+            ? preview.price
+            : Number(preview?.price ?? 0);
+        setPrice(Number.isFinite(p) ? p : 0);
+      } catch (e) {
+        // 프리뷰 실패 시 기본값 유지
+      }
+    })();
+  }, [courseId]);
+
+  // 결제 가능여부: 유효한 코스 + 0원 초과 가격
+  const canPay = courseId > 0 && price > 0;
+  // 약관 + 카카오페이 + 결제 가능 조건 모두 충족 시에만 활성화
+  const canSubmit = canPay && agree && payMethod === "kakaopay";
 
   const handleSubmit = async () => {
     if (!canSubmit) return;
+    if (!canPay) {
+      alert("결제할 수 없는 상품입니다. 코스 정보를 다시 확인해주세요.");
+      return;
+    }
     try {
       setLoading(true);
-      const redirectUrl = await readyKakaoPay(1); // <-- 고정된 코스 ID
-      // 현재 탭에서 카카오 결제 페이지로 이동
+      const redirectUrl = await readyKakaoPay(courseId);
       window.location.assign(redirectUrl);
     } catch (err) {
       alert(err?.message || "결제 준비 중 오류가 발생했습니다.");
@@ -57,6 +85,11 @@ export default function PaymentPage() {
                 className="w-full rounded-xl border border-gray-300 bg-gray-50 px-4 py-3 text-gray-900 shadow-inner focus:outline-none"
               />
             </div>
+            {!canPay && (
+              <p className="mt-2 text-sm text-red-500">
+                결제할 수 없는 코스이거나 가격 정보가 없습니다.
+              </p>
+            )}
           </div>
 
           {/* 추천인 코드 */}
@@ -195,6 +228,12 @@ export default function PaymentPage() {
               />
             </div>
 
+            {!canPay && (
+              <p className="mt-4 text-xs text-red-500">
+                결제할 수 없는 상태입니다. 코스ID 또는 가격을 확인해주세요.
+              </p>
+            )}
+
             <button
               type="button"
               onClick={handleSubmit}
@@ -208,6 +247,8 @@ export default function PaymentPage() {
               title={
                 canSubmit
                   ? "카카오 결제 페이지로 이동합니다."
+                  : !canPay
+                  ? "결제할 수 없는 상품입니다."
                   : "카카오페이를 선택하고 약관에 동의하면 활성화됩니다."
               }
             >

@@ -1,4 +1,6 @@
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import { getCoursePreview } from "../../services/api/courseApi";
 
 import backgroundImg from "../../assets/data/ai-main-background-pc.avif";
 import dalpha from "../../assets/data/DALPHA.avif";
@@ -7,6 +9,24 @@ import StickyCard from "../../components/course/StickyCard";
 
 export default function DataAIPage() {
   const navigate = useNavigate();
+  const courseId = 1;
+
+  const [title, setTitle] = useState("");
+  const [price, setPrice] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const d = await getCoursePreview(courseId);
+        setTitle(d?.title ?? "");
+        const p =
+          typeof d?.price === "number" ? d.price : Number(d?.price ?? 0);
+        setPrice(Number.isFinite(p) ? p : 0);
+      } catch {
+        // 미리보기 호출 실패 시 기본값 유지
+      }
+    })();
+  }, [courseId]);
 
   return (
     <section className="relative w-full h-[calc(100vh-98px)] flex items-center justify-center ">
@@ -37,7 +57,7 @@ export default function DataAIPage() {
             <img
               src={thoughtly}
               alt="Thoughtly 로고"
-              className="h-7 mt-1" /* 필요에 따라 높이 조절 */
+              className="h-7 mt-1"
               loading="lazy"
             />
           </div>
@@ -48,7 +68,7 @@ export default function DataAIPage() {
             <img
               src={dalpha}
               alt="DαLPHA 로고"
-              className="h-7 mt-1" /* 동일한 높이로 맞추면 깔끔합니다 */
+              className="h-7 mt-1"
               loading="lazy"
             />
           </div>
@@ -77,18 +97,21 @@ export default function DataAIPage() {
           취업에 필요한 모든 것을 최고에서 경험하세요.
         </p>
 
-        {/* 버튼 */}
         <button
-          onClick={() => navigate("/course/payment")}
+          onClick={() => navigate(`/course/payment?courseId=${courseId}`)}
           className="mt-10 px-20 py-5 bg-black text-white font-bold text-2xl rounded-lg hover:bg-gray-900"
         >
           100% 취업 보장받고 시작하기
         </button>
       </div>
+
       <StickyCard
         top={110}
         dDay={5}
-        onCtaClick={() => navigate("/course/payment")}
+        courseId={courseId}
+        title={title}
+        originalPrice={price}
+        onCtaClick={(cid) => navigate(`/course/payment?courseId=${cid}`)}
       />
     </section>
   );

@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useNavigate } from "react-router-dom";
-import { getCourses } from "../../services/api/adminCourseApi";
+import { getCourses } from "../../services/api/courseApi";
 import CourseCreateModal from "../../components/admin/CourseCreateModal";
 
 const PAGE_SIZE = 10;

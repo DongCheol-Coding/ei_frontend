@@ -1,9 +1,33 @@
-import React from "react";
+import { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import { getCoursePreview } from "../../services/api/courseApi";
+
 import backgroundImg from "../../assets/fullstack/product-head-img-FS.webp";
 import priceUpBuble from "../../assets/fullstack/price-up-bubble-FS.svg";
 import whiteCross from "../../assets/white-cross.svg";
+import StickyCard from "../../components/course/StickyCard";
 
 export default function FullStackPage() {
+  const navigate = useNavigate();
+  const courseId = 2;
+
+  const [title, setTitle] = useState("");
+  const [price, setPrice] = useState(0);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const d = await getCoursePreview(courseId);
+        setTitle(d?.title ?? "");
+        const p =
+          typeof d?.price === "number" ? d.price : Number(d?.price ?? 0);
+        setPrice(Number.isFinite(p) ? p : 0);
+      } catch {
+        // 미리보기 호출 실패 시 기본값 유지
+      }
+    })();
+  }, [courseId]);
+
   return (
     <section className="relative w-full h-[calc(100vh-98px)] flex flex-col items-center justify-center text-white">
       {/* 1) 뒤 그라디언트 엘립스 */}
@@ -64,8 +88,9 @@ export default function FullStackPage() {
         <div className="mt-18 flex flex-col items-center">
           <img src={priceUpBuble} alt="Price Up Bubble" />
           <button
-            className="font-bold py-4 px-20 rounded-xl shadow-lg transition-all focus:outline-none mt-2"
-            style={{ backgroundColor: "#8dffa0", color: "#1A2246" }}
+            onClick={() => navigate(`/course/payment?courseId=${courseId}`)}
+            className="font-bold py-4 px-20 rounded-xl shadow-lg transition-all focus:outline-none mt-2
+             bg-[#8dffa0] text-[#1A2246] hover:bg-[#7cf093] active:bg-[#6be482]"
           >
             100% 보장 받고 시작하기
           </button>
@@ -83,6 +108,14 @@ export default function FullStackPage() {
           <p>* 취업률 1위 : M사 전국 지점 평균 취업률 1위, 취업자 수 1위</p>
         </div>
       </div>
+      <StickyCard
+        top={110}
+        dDay={5}
+        courseId={courseId}
+        title={title}
+        originalPrice={price}
+        onCtaClick={(cid) => navigate(`/course/payment?courseId=${cid}`)}
+      />
     </section>
   );
 }

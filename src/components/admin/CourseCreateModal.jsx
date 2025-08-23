@@ -1,6 +1,6 @@
 // src/components/admin/CourseCreateModal.jsx
 import { useEffect, useRef, useState } from "react";
-import { createCourse } from "../../services/api/adminCourseApi";
+import { createCourse } from "../../services/api/courseApi";
 
 const krw = (n) => new Intl.NumberFormat("ko-KR").format(Number(n ?? 0));
 

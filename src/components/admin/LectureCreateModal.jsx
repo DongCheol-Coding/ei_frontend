@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { createLectureWithVideo } from "../../services/api/adminCourseApi";
+import { createLectureWithVideo } from "../../services/api/courseApi";
 
 export default function LectureCreateModal({
   open,
@@ -171,7 +171,9 @@ export default function LectureCreateModal({
 
             {/* 영상 파일 */}
             <div className="flex flex-col">
-              <label className="text-[11px] text-gray-500 mb-1">영상 파일</label>
+              <label className="text-[11px] text-gray-500 mb-1">
+                영상 파일
+              </label>
               <input
                 ref={fileInputRef}
                 type="file"

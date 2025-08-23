@@ -2,10 +2,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
-import {
-  getCourseLectures,
-  deleteLecture,
-} from "../../services/api/adminCourseApi";
+import { getCourseLectures, deleteLecture } from "../../services/api/courseApi";
 import LectureCreateModal from "../../components/admin/LectureCreateModal";
 
 const PAGE_SIZE = 20;
