@@ -4,8 +4,7 @@ import { useSelector } from "react-redux";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { getMyCourses } from "../../services/api/myPageApi";
 
-const FALLBACK_IMG =
-  "https://objectstorage.ap-chuncheon-1.oraclecloud.com/n/axvfl45etb2r/b/prod-suco-web-user-assets/o/UploadedFiles/ProductThumb/160/c979c3c6-1910-490b-a84c-364a58c9f462-4-Thumbnail_%EC%B7%A8%EC%A4%80%EC%83%9D_%EB%B0%B1.png";
+const FALLBACK_IMG = "https://placehold.co/300x200";
 
 export default function EndCoursePage() {
   const { coursesProgress: initial = [] } = useOutletContext() ?? {};
@@ -24,9 +23,14 @@ export default function EndCoursePage() {
 
     setLoading(true);
     setErr(null);
+
     getMyCourses({ accessToken, signal: ac.signal })
-      .then((list) => setRows(list))
-      .catch((e) => setErr(e?.message || "강의 목록을 가져오지 못했습니다."))
+      .then((list) => {
+        setRows(Array.isArray(list) ? list : []);
+      })
+      .catch((e) =>
+        setErr(e?.message || "수강중인 강의를 가져오지 못했습니다.")
+      )
       .finally(() => setLoading(false));
 
     return () => ac.abort();
@@ -98,6 +102,8 @@ export default function EndCoursePage() {
                   src={img}
                   alt="course thumbnail"
                   className="w-full h-36 sm:h-40 object-cover rounded-lg"
+                  loading="lazy"
+                  decoding="async"
                   onError={(e) => (e.currentTarget.src = FALLBACK_IMG)}
                 />
               </div>
