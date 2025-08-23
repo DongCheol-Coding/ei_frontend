@@ -153,6 +153,7 @@ export async function getMyPayments(argOrOpts = {}) {
   }
 }
 
+// [수정됨] imageUrl만 사용하도록 응답 정규화 간소화
 export async function getMyCourses(argOrOpts = {}) {
   // 인자 정규화
   let token = null;
@@ -184,22 +185,31 @@ export async function getMyCourses(argOrOpts = {}) {
 
     const list = Array.isArray(body?.data?.content) ? body.data.content : [];
 
-    // 응답 정규화
+    // imageUrl만 사용
     return list.map((c) => ({
       courseId: c?.courseId != null ? Number(c.courseId) : null,
       courseTitle: typeof c?.courseTitle === "string" ? c.courseTitle : "",
+      imageUrl:
+        typeof c?.imageUrl === "string" && c.imageUrl.trim()
+          ? c.imageUrl.trim()
+          : null,
       progress:
         c?.progress != null && !Number.isNaN(Number(c.progress))
           ? Number(c.progress)
           : 0,
-      completedCount: c?.completedCount != null ? Number(c.completedCount) : 0,
-      totalCount: c?.totalCount != null ? Number(c.totalCount) : 0,
+      completedCount:
+        c?.completedCount != null && !Number.isNaN(Number(c.completedCount))
+          ? Number(c.completedCount)
+          : 0,
+      totalCount:
+        c?.totalCount != null && !Number.isNaN(Number(c.totalCount))
+          ? Number(c.totalCount)
+          : 0,
     }));
   } catch (err) {
     if (!err?.response) {
       throw new Error("네트워크/CORS 오류로 코스 목록을 가져오지 못했습니다.");
     }
-    // 401 등 인증 오류는 basicApi 인터셉터에서 공통 처리
     throw err;
   }
 }

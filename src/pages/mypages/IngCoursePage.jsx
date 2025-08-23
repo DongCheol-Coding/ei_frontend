@@ -25,10 +25,7 @@ export default function IngCoursePage() {
     setErr(null);
 
     getMyCourses({ accessToken, signal: ac.signal })
-      .then((res) => {
-        const list = Array.isArray(res)
-          ? res
-          : res?.data?.content ?? res?.content ?? res?.data ?? [];
+      .then((list) => {
         setRows(Array.isArray(list) ? list : []);
       })
       .catch((e) =>
@@ -95,14 +92,6 @@ export default function IngCoursePage() {
         !err &&
         courses.map((c, idx) => {
           const img = (c?.imageUrl ?? "").trim() || FALLBACK_IMG;
-          /* 디버깅용 로그 추가 */
-          console.log("[IngCoursePage] img =", img, {
-            idx,
-            courseId: c?.courseId,
-            courseTitle: c?.courseTitle,
-            rawImageUrl: c?.imageUrl,
-          });
-
           return (
             <div
               key={c?.courseId ?? idx}
