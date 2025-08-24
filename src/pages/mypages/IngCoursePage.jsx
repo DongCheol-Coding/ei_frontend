@@ -47,7 +47,6 @@ export default function IngCoursePage() {
     return Math.round(val * 100);
   };
 
-  // 한 번만 계산해 __percent를 붙입니다.
   const viewRows = useMemo(
     () =>
       (rows ?? []).map((c) => ({
@@ -57,15 +56,22 @@ export default function IngCoursePage() {
     [rows]
   );
 
-  // 진행 중만 노출 (< 100)
   const courses = useMemo(
     () => viewRows.filter((c) => c.__percent < 100),
     [viewRows]
   );
 
-  // 변경: 페이지 자체 스크롤 영역 래퍼 추가 (고정 높이 = 부모(main)의 높이)
+  // 고정 높이(=뷰포트-헤더98px-푸터), 부모(main)보다 커지지 않게 maxHeight
+  const containerStyle = {
+    height: "calc(100dvh - 98px - var(--footer-h, 80px))",
+    maxHeight: "100%",
+  };
+
   return (
-    <section className="w-full h-full self-stretch min-h-0 overflow-y-auto">
+    <section
+      className="w-full self-stretch min-h-0 overflow-y-auto"
+      style={containerStyle}
+    >
       <div className="mx-auto max-w-5xl space-y-4 p-4">
         <div>
           <h1 className="text-2xl font-bold">수강중인 강의</h1>
