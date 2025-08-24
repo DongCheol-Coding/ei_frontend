@@ -45,9 +45,10 @@ export default function MyPageLayout() {
     return <Navigate to="/admin" replace />;
   }
 
+  /* 수정됨: 문서 전체 스크롤을 위해 고정 높이(h-...) → 최소 높이(min-h-...)로 변경 */
   if (loading) {
     return (
-      <div className="w-full h-[calc(100vh-98px)] bg-gray-50 p-20 grid place-items-center">
+      <div className="w-full min-h-[calc(100vh-98px)] bg-gray-50 p-20 grid place-items-center">
         불러오는 중…
       </div>
     );
@@ -56,10 +57,11 @@ export default function MyPageLayout() {
     return <Navigate to="/" replace />;
   }
 
+  /* 수정됨: 고정 높이 제거(h-...), 하위 컨테이너의 h-full 제거, 푸터와 간격 확보를 위해 pb-24 추가 */
   return (
-    <div className="w-full h-[calc(100vh-98px)] bg-gray-50 p-20">
-      <div className="mx-auto max-w-7xl h-full">
-        <div className="grid grid-cols-[16rem_1fr] gap-6 h-full">
+    <div className="w-full min-h-[calc(100vh-98px)] bg-gray-50 p-20 pb-24">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid grid-cols-[16rem_1fr] gap-6">
           <SideBar />
           <main className="space-y-6">
             <div className="bg-white rounded-2xl border border-gray-200 px-5 py-6">
