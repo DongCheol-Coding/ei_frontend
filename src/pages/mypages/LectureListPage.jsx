@@ -1,11 +1,18 @@
 // src/pages/LectureListPage.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
 import {
   getCourseLectures,
   getLectureDetail,
 } from "../../services/api/courseApi";
+// 진행도 업데이트 API
+import { updateLectureProgress } from "../../services/api/myPageApi";
+
+// 진행도 자동 저장 설정
+const SAVE_EVERY_SEC = 10; // 주기 저장(10초마다). 5로 줄이면 5초 저장
+const FIRST_SAVE_AT_SEC = 2; // 최초 저장 임계치(2초 도달 시 1회 저장)
+const LAST_FLUSH_GUARD_MS = 1200; // 연속 플러시 최소 간격(ms)
 
 const toHMS = (sec) => {
   const s = Math.max(0, Number(sec || 0));
@@ -43,7 +50,20 @@ export default function LectureListPage() {
   const listAcRef = useRef(null);
   const vidAcRef = useRef(null);
 
-  // --- 강의 목록 로드
+  // 비디오/진행도 관련 refs
+  const videoRef = useRef(null);
+  const progressAcRef = useRef(null);
+  const lastSavedBucketRef = useRef(-1); // 버킷 기반 중복 방지
+  const firstSavedRef = useRef(false); // 최초 임계치(2초) 저장 여부
+  const lastFlushAtRef = useRef(0); // 플러시 스팸 방지
+  const canonicalDurRef = useRef(0); // 완료 시간 계산용 기준 길이(초)
+
+  const selectedRow = useMemo(
+    () => (rows ?? []).find((l) => l.id === selectedId) || null,
+    [rows, selectedId]
+  );
+
+  // 강의 목록 로드
   useEffect(() => {
     if (!Number.isFinite(courseId) || courseId <= 0) {
       setErr("유효한 코스 ID가 아닙니다.");
@@ -63,7 +83,7 @@ export default function LectureListPage() {
     return () => ac.abort();
   }, [courseId, accessToken]);
 
-  // --- 선택된 강의 상세(영상 URL) 로드
+  // 선택된 강의 상세(영상 URL) 로드
   useEffect(() => {
     if (!selectedId) {
       setVideo({ url: null, title: "", durationSec: 0, description: "" });
@@ -91,6 +111,12 @@ export default function LectureListPage() {
       })
       .finally(() => setVideoLoading(false));
 
+    // 새 강의 선택 시 초기화
+    lastSavedBucketRef.current = -1;
+    firstSavedRef.current = false;
+    lastFlushAtRef.current = 0;
+    canonicalDurRef.current = 0;
+
     return () => ac.abort();
   }, [selectedId, accessToken]);
 
@@ -104,18 +130,196 @@ export default function LectureListPage() {
     [rows, selectedId]
   );
 
+  // 진행도 저장(요청 중복/폭주 방지)
+  const postProgress = useCallback(
+    async (sec) => {
+      if (!Number.isInteger(sec) || sec < 0) return;
+      if (!selectedId) return;
+
+      progressAcRef.current?.abort?.();
+      const ac = new AbortController();
+      progressAcRef.current = ac;
+
+      try {
+        await updateLectureProgress({
+          lectureId: selectedId,
+          watchedSec: sec,
+          accessToken,
+          signal: ac.signal,
+        });
+      } catch {
+        // 무음 처리(원하면 toast로 변경)
+      }
+    },
+    [selectedId, accessToken]
+  );
+
+  // 이탈/새로고침 플러시(keepalive fetch 또는 sendBeacon)
+  const flushProgressOnExit = useCallback(
+    (sec) => {
+      if (!selectedId) return;
+      const url = `/api/lectures/${selectedId}/progress`;
+      const payload = JSON.stringify({
+        watchedSec: Math.max(0, Math.floor(sec || 0)),
+      });
+
+      try {
+        if (accessToken) {
+          fetch(url, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+              Authorization: `Bearer ${accessToken}`,
+            },
+            body: payload,
+            keepalive: true,
+            credentials: "include",
+          }).catch(() => {});
+        } else {
+          const blob = new Blob([payload], { type: "application/json" });
+          navigator.sendBeacon?.(url, blob);
+        }
+      } catch {}
+    },
+    [selectedId, accessToken]
+  );
+
+  // 재생 중 자동 저장: 최초 2초 1회 + SAVE_EVERY_SEC 버킷마다
+  const handleTimeUpdate = useCallback(() => {
+    const v = videoRef.current;
+    if (!v || v.paused) return;
+
+    const t = Math.floor(v.currentTime || 0);
+
+    // 최초 임계치 저장
+    if (!firstSavedRef.current && t >= FIRST_SAVE_AT_SEC) {
+      firstSavedRef.current = true;
+      lastSavedBucketRef.current = Math.floor(t / SAVE_EVERY_SEC);
+      postProgress(t);
+      return;
+    }
+
+    // 버킷 저장
+    const bucket = Math.floor(t / SAVE_EVERY_SEC);
+    if (bucket > lastSavedBucketRef.current) {
+      lastSavedBucketRef.current = bucket;
+      postProgress(t);
+    }
+  }, [postProgress]);
+
+  // 시킹 직후 저장(점프 후 즉시 이탈 대비)
+  const handleSeeked = useCallback(() => {
+    const v = videoRef.current;
+    const t = Math.floor(v?.currentTime || 0);
+    const bucket = Math.floor(t / SAVE_EVERY_SEC);
+
+    if (!firstSavedRef.current && t >= FIRST_SAVE_AT_SEC) {
+      firstSavedRef.current = true;
+    }
+    if (bucket > lastSavedBucketRef.current) {
+      lastSavedBucketRef.current = bucket;
+      postProgress(t);
+    }
+  }, [postProgress]);
+
+  // 일시정지 시 플러시(스팸 방지)
+  const handlePause = useCallback(() => {
+    const now = Date.now();
+    if (now - lastFlushAtRef.current < LAST_FLUSH_GUARD_MS) return;
+
+    const t = Math.floor(videoRef.current?.currentTime || 0);
+    lastFlushAtRef.current = now;
+    postProgress(t);
+  }, [postProgress]);
+
+  // 종료 시 최종 시간(초) 저장 + 즉시 flush
+  const handleEnded = useCallback(() => {
+    const v = videoRef.current;
+    const domDur = Number.isFinite(v?.duration) ? v.duration : 0;
+    const apiDur = Number.isFinite(video?.durationSec) ? video.durationSec : 0;
+    const base =
+      canonicalDurRef.current || apiDur || domDur || v?.currentTime || 0;
+
+    const endSec = Math.max(1, Math.round(base)); // 29.98 → 30 등 반올림
+    lastSavedBucketRef.current = Math.floor(endSec / SAVE_EVERY_SEC);
+    firstSavedRef.current = true;
+
+    postProgress(endSec);
+    flushProgressOnExit(endSec);
+  }, [postProgress, flushProgressOnExit, video?.durationSec]);
+
+  // 메타 로드 시 기준 길이 확정 + 이전 진행률 위치로 점프
+  const handleLoadedMetadata = useCallback(
+    (e) => {
+      const v = e.currentTarget;
+      const domDur = Number.isFinite(v?.duration) ? Math.floor(v.duration) : 0;
+      const apiDur = Number.isFinite(video?.durationSec)
+        ? Math.floor(video.durationSec)
+        : 0;
+
+      canonicalDurRef.current = apiDur > 0 ? apiDur : domDur;
+
+      const baseDur = canonicalDurRef.current || 0;
+      const pct = Math.max(0, Math.min(1, selectedRow?.progress ?? 0));
+      const fromSec = Math.floor(baseDur * pct);
+
+      if (
+        fromSec > 0 &&
+        v &&
+        Number.isFinite(v.duration) &&
+        fromSec < v.duration
+      ) {
+        try {
+          v.currentTime = fromSec;
+        } catch {}
+        lastSavedBucketRef.current = Math.floor(fromSec / SAVE_EVERY_SEC) - 1;
+        firstSavedRef.current = fromSec >= FIRST_SAVE_AT_SEC;
+      } else {
+        lastSavedBucketRef.current = -1;
+        firstSavedRef.current = false;
+      }
+    },
+    [selectedRow, video?.durationSec]
+  );
+
+  // 탭 이탈/닫힘 시 최종 플러시
+  useEffect(() => {
+    const onHidden = () => {
+      if (!selectedId) return;
+      const t = Math.floor(videoRef.current?.currentTime || 0);
+      flushProgressOnExit(t);
+    };
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") onHidden();
+    };
+    const onPageHide = () => onHidden();
+
+    window.addEventListener("pagehide", onPageHide);
+    document.addEventListener("visibilitychange", onVisibility);
+    return () => {
+      window.removeEventListener("pagehide", onPageHide);
+      document.removeEventListener("visibilitychange", onVisibility);
+    };
+  }, [selectedId, flushProgressOnExit]);
+
+  // 나가기 버튼: 현재 시점 플러시 후 이동
+  const handleExit = useCallback(() => {
+    if (selectedId) {
+      const t = Math.floor(videoRef.current?.currentTime || 0);
+      flushProgressOnExit(t);
+    }
+    navigate(-1);
+  }, [selectedId, navigate, flushProgressOnExit]);
+
   return (
-    // 페이지는 스크롤 가능, 가로는 꽉 차게
     <div className="w-screen min-h-screen bg-white">
-      {/* 바깥에 살짝 여백: p-2 */}
       <div className="p-2">
-        {/* 상단: 여백(p-2)만큼 높이를 보정한 2열 레이아웃 */}
         <div className="h-[calc(100svh-16px)] overflow-hidden">
           <div
             className="h-full grid gap-4"
             style={{ gridTemplateColumns: "minmax(0,7fr) minmax(320px,3fr)" }}
           >
-            {/* LEFT: 비디오 - 부모 높이 꽉 채움 */}
+            {/* LEFT: 비디오 */}
             <section className="h-full min-h-0 flex flex-col">
               <div className="relative flex-1 min-h-0 rounded-2xl border bg-black overflow-hidden">
                 {videoLoading && (
@@ -131,10 +335,16 @@ export default function LectureListPage() {
                 {!videoLoading && !videoErr && video.url && (
                   <video
                     key={video.url}
+                    ref={videoRef}
                     className="absolute inset-0 w-full h-full"
                     src={video.url}
                     controls
                     playsInline
+                    onTimeUpdate={handleTimeUpdate}
+                    onSeeked={handleSeeked}
+                    onPause={handlePause}
+                    onEnded={handleEnded}
+                    onLoadedMetadata={handleLoadedMetadata}
                   />
                 )}
                 {!videoLoading && !videoErr && !video.url && (
@@ -145,14 +355,13 @@ export default function LectureListPage() {
               </div>
             </section>
 
-            {/* RIGHT: 목차 - 내부 스크롤 전담 */}
+            {/* RIGHT: 목차 */}
             <aside className="h-full min-h-0">
               <div className="h-full min-h-0 rounded-2xl border bg-white flex flex-col overflow-hidden">
-                {/* 상단 고정 헤더 */}
                 <div className="shrink-0 border-b">
                   <div className="p-3 sm:p-4 flex items-center justify-between gap-2">
                     <button
-                      onClick={() => navigate(-1)}
+                      onClick={handleExit}
                       className="rounded-lg border px-3 py-2 text-sm hover:bg-gray-50"
                     >
                       나가기
@@ -166,7 +375,6 @@ export default function LectureListPage() {
                   </div>
                 </div>
 
-                {/* 스크롤 영역 */}
                 <ul className="grow min-h-0 overflow-y-auto divide-y">
                   {loading && (
                     <li className="p-6 text-center text-gray-500">
@@ -243,7 +451,6 @@ export default function LectureListPage() {
           </div>
         </div>
 
-        {/* 하단 상세: 선택 시 노출. 페이지 전체 스크롤 발생 */}
         {video.url && (
           <div
             className="mt-4 grid gap-4"

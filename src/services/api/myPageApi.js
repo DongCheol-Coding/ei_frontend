@@ -213,3 +213,54 @@ export async function getMyCourses(argOrOpts = {}) {
     throw err;
   }
 }
+
+export async function updateLectureProgress({
+  lectureId,
+  watchedSec,
+  accessToken,
+  token,
+  signal,
+} = {}) {
+  // 입력값 검증
+  if (!Number.isFinite(lectureId)) {
+    throw new Error("유효한 lectureId가 필요합니다.");
+  }
+  if (!Number.isInteger(watchedSec) || watchedSec < 0) {
+    throw new Error("watchedSec은 0 이상의 정수여야 합니다.");
+  }
+
+  // 인증 헤더(쿠키 인증이면 생략 가능)
+  const headers = {};
+  const bearer = accessToken ?? token;
+  if (bearer) headers.Authorization = `Bearer ${bearer}`;
+
+  try {
+    const res = await api.post(
+      `/api/lectures/${lectureId}/progress`,
+      { watchedSec }, // 서버 DTO: { watchedSec: number }
+      { headers, signal }
+    );
+
+    const body = res?.data;
+
+    // 바디 없이 2xx만 오는 경우까지 허용 → true 반환
+    if (!body || typeof body !== "object") {
+      if (res.status >= 200 && res.status < 300) return true;
+      throw new Error(`예상치 못한 응답 형식 (HTTP ${res.status})`);
+    }
+
+    // 표준 포맷: { status, success, message, data }
+    const ok = body.status === 200 || body.success === true;
+    if (!ok) {
+      throw new Error(body?.message || "진행도 업데이트에 실패했습니다.");
+    }
+
+    // 서버가 반환하는 CourseProgressWithLectureDto를 그대로 전달
+    return body.data ?? true;
+  } catch (err) {
+    if (!err?.response) {
+      throw new Error("네트워크/CORS 오류로 진행도를 업데이트하지 못했습니다.");
+    }
+    throw err;
+  }
+}
