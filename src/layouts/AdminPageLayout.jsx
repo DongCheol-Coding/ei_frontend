@@ -4,8 +4,8 @@ import AdminSideBar from "../components/mypage/AdminSideBar";
 export default function AdminPageLayout() {
   return (
     <div className="w-full h-[calc(100vh-98px)] bg-gray-50 p-20">
-      <div className="mx-auto max-w-7xl h-full">
-        <div className="grid grid-cols-[16rem_1fr] gap-6 h-full">
+      <div className="mx-auto max-w-7xl">
+        <div className="grid grid-cols-[16rem_1fr] gap-6">
           <AdminSideBar />
           <main className="space-y-6">
             {/* 페이지 내용 */}
