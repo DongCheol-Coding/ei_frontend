@@ -47,6 +47,7 @@ export default function IngCoursePage() {
     return Math.round(val * 100);
   };
 
+  // 한 번만 계산해 __percent를 붙입니다.
   const viewRows = useMemo(
     () =>
       (rows ?? []).map((c) => ({
@@ -56,23 +57,16 @@ export default function IngCoursePage() {
     [rows]
   );
 
+  // 진행 중만 노출 (< 100)
   const courses = useMemo(
     () => viewRows.filter((c) => c.__percent < 100),
     [viewRows]
   );
 
+  // 변경: 페이지 자체 스크롤 영역 래퍼 추가 (고정 높이 = 부모(main)의 높이)
   return (
-    /* 추가됨: 이 섹션이 ‘페이지 내부 스크롤’ 컨테이너입니다.
-       - h-[calc(100vh-120px)] : 헤더/상단여백(대략 120px)을 뺀 가시영역 고정
-       - overflow-y-auto       : 섹션 내부에서만 스크롤
-       - pb-24                 : 고정/스티키 푸터 높이만큼 여백(가려짐 방지)
-       필요 시 120, 24 값을 사이트 헤더/푸터 실제 높이에 맞춰 미세조정하세요. */
-    <section
-      className="h-[calc(100vh-120px)] overflow-y-auto overscroll-contain"
-      style={{ scrollbarGutter: "stable" }}
-      aria-label="수강중인 강의 영역"
-    >
-      <div className="mx-auto max-w-5xl space-y-4 pb-24">
+    <section className="w-full h-full self-stretch min-h-0 overflow-y-auto">
+      <div className="mx-auto max-w-5xl space-y-4 p-4">
         <div>
           <h1 className="text-2xl font-bold">수강중인 강의</h1>
           <p className="text-sm text-gray-500">수강중인 강의 목록입니다.</p>
@@ -105,6 +99,7 @@ export default function IngCoursePage() {
                 key={c?.courseId ?? idx}
                 className="flex flex-col gap-6 sm:flex-row items-center sm:items-stretch rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
               >
+                {/* 왼쪽: 썸네일 */}
                 <div className="w-full sm:w-60 shrink-0">
                   <img
                     src={img}
@@ -116,6 +111,7 @@ export default function IngCoursePage() {
                   />
                 </div>
 
+                {/* 가운데: 제목 + 진행률 */}
                 <div className="flex-1 w-full">
                   <div className="text-base sm:text-lg font-semibold line-clamp-2">
                     {c?.courseTitle || "제목 없음"}
@@ -135,6 +131,7 @@ export default function IngCoursePage() {
                   </div>
                 </div>
 
+                {/* 오른쪽 */}
                 <div className="w-full sm:w-auto flex sm:flex-col gap-3 sm:justify-center sm:items-center">
                   <button
                     type="button"
