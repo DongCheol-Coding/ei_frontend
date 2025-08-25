@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Outlet, Navigate } from "react-router-dom";
 import { useSelector } from "react-redux";
 import SideBar from "../components/mypage/SideBar";
@@ -41,11 +41,24 @@ export default function MyPageLayout() {
     return () => ac.abort();
   }, []);
 
+  const latestPaidCourseId = useMemo(() => {
+    const payments = Array.isArray(data?.payments) ? data.payments : [];
+    if (!payments.length) return null;
+
+    const latest = payments.slice().sort((a, b) => {
+      const da = new Date(a?.paymentDate ?? 0).getTime();
+      const db = new Date(b?.paymentDate ?? 0).getTime();
+      return db - da;
+    })[0];
+
+    const cid = Number(latest?.courseId);
+    return Number.isFinite(cid) ? cid : null;
+  }, [data?.payments]);
+
   if (admin) {
     return <Navigate to="/admin" replace />;
   }
 
-  /* 수정됨: 문서 전체 스크롤을 위해 고정 높이(h-...) → 최소 높이(min-h-...)로 변경 */
   if (loading) {
     return (
       <div className="w-full min-h-[calc(100vh-98px)] bg-gray-50 p-20 grid place-items-center">
@@ -77,6 +90,7 @@ export default function MyPageLayout() {
                   user: data.user,
                   payments: data.payments,
                   coursesProgress: data.coursesProgress,
+                  latestPaidCourseId,
                 }}
               />
             </section>
