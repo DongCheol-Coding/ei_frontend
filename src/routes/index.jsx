@@ -13,6 +13,7 @@ import NotFoundPage from "../pages/common/NotFoundPage";
 import RequireAuth from "../pages/common/RequireAuth";
 import AdminRequireAuth from "../pages/admin/RequireAdminAuth";
 import LectureListPage from "../pages/mypages/LectureListPage";
+import EmailAuthPage from "../pages/accounts/EmailAuthPage";
 
 const LandingPage = lazy(() => import("../pages/LandingPage"));
 
@@ -24,6 +25,14 @@ const root = createBrowserRouter([
   {
     element: <BasicLayout />, // 공통 레이아웃 적용
     children: [
+      {
+        path: "auth/verify-success",
+        element: (
+          <Suspense fallback={<LoadingPage />}>
+            <EmailAuthPage />
+          </Suspense>
+        ),
+      },
       {
         index: true, // "/" 라우트
         element: withSuspense(<LandingPage />),
