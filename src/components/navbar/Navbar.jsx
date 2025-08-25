@@ -1,4 +1,3 @@
-// src/components/navbar/Navbar.jsx
 import { useState } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
 import { useSelector, useDispatch } from "react-redux";
@@ -37,6 +36,15 @@ export default function Navbar() {
   const base = "text-gray-600 px-3 py-2 hover:bg-gray-100 rounded";
   const item = ({ isActive }) =>
     `${base} ${isActive ? "font-extrabold" : "font-medium"}`;
+
+  // 모바일 NavLink 공통 클래스
+  const mobileItem = ({ isActive }) =>
+    [
+      "block px-4 py-3 text-sm text-center",
+      isActive
+        ? "font-extrabold text-black bg-gray-50"
+        : "text-gray-800 hover:bg-gray-50 hover:font-bold",
+    ].join(" ");
 
   const name = useSelector((s) => s.auth?.user?.name) ?? "비회원";
 
@@ -114,7 +122,7 @@ export default function Navbar() {
                     transition duration-150
                     absolute right-0 top-full mt-2 w-44
                     bg-white border border-gray-200 rounded-lg shadow-lg z-60
-                     text-center
+                    text-center
                   "
                 >
                   {!admin && (
@@ -173,45 +181,50 @@ export default function Navbar() {
             </button>
           </div>
         </div>
+
         {/* --- 모바일 드롭다운 패널(오른쪽 정렬) --- */}
         {open && (
           <>
-            {/* 바깥 클릭 닫힘용 오버레이 */}
+            {/* 바깥 클릭 닫힘용 오버레이 (패널보다 '아래'에 배치) */}
             <div
-              className="fixed inset-0 lg:hidden z-60"
+              className="fixed inset-0 lg:hidden z-40"
               onClick={() => setOpen(false)}
             />
-            {/* 패널 */}
-            <div className="lg:hidden absolute right-0 top-full w-[200px] bg-white border border-gray-200 rounded-md shadow-xl z-50">
+            {/* 패널 (오버레이보다 z-index가 높아야 클릭 가능) */}
+            <div
+              className="lg:hidden absolute right-0 top-full w-[200px] bg-white border border-gray-200 rounded-md shadow-xl z-[80]"
+              role="menu"
+              aria-label="모바일 내비게이션"
+            >
               <nav className="py-2 text-center">
-                <Link
+                <NavLink
                   to="/course/data"
+                  className={mobileItem}
                   onClick={() => setOpen(false)}
-                  className="block px-4 py-3 text-sm text-gray-800 hover:bg-gray-50"
                 >
                   DATA/AI 부트캠프
-                </Link>
-                <Link
+                </NavLink>
+                <NavLink
                   to="/course/fullstack"
+                  className={mobileItem}
                   onClick={() => setOpen(false)}
-                  className="block px-4 py-3 text-sm text-gray-800 hover:bg-gray-50"
                 >
                   풀스택 부트캠프
-                </Link>
-                <Link
+                </NavLink>
+                <NavLink
                   to="/course/frontend"
+                  className={mobileItem}
                   onClick={() => setOpen(false)}
-                  className="block px-4 py-3 text-sm text-gray-800 hover:bg-gray-50"
                 >
                   프론트엔드 부트캠프
-                </Link>
-                <Link
+                </NavLink>
+                <NavLink
                   to="/course/backend"
+                  className={mobileItem}
                   onClick={() => setOpen(false)}
-                  className="block px-4 py-3 text-sm text-gray-800 hover:bg-gray-50"
                 >
                   백엔드 부트캠프
-                </Link>
+                </NavLink>
               </nav>
 
               <div className="border-t border-t-gray-300" />
@@ -219,35 +232,57 @@ export default function Navbar() {
               <div className="py-2 text-center">
                 {isAuth ? (
                   <>
-                    <Link
-                      to="mypage"
-                      className="block px-4 py-3 text-[15px] font-bold hover:bg-violet-50"
+                    <NavLink
+                      to={admin ? "admin" : "mypage"}
+                      className={({ isActive }) =>
+                        [
+                          "block px-4 py-3 text-[15px] font-bold",
+                          admin ? "text-red-500" : "text-gray-800",
+                          isActive ? "bg-violet-50" : "hover:bg-violet-50",
+                        ].join(" ")
+                      }
+                      onClick={() => setOpen(false)}
                     >
-                      마이페이지
-                    </Link>
-                    <Link
+                      {admin ? "관리자페이지" : "마이페이지"}
+                    </NavLink>
+                    <button
+                      type="button"
                       onClick={handleLogout}
-                      className="block px-4 py-3 text-sm font-semibold text-gray-400 hover:bg-violet-50"
+                      className="w-full block px-4 py-3 text-sm font-semibold text-gray-400 hover:bg-violet-50"
                     >
                       로그아웃
-                    </Link>
+                    </button>
                   </>
                 ) : (
                   <>
-                    <Link
+                    <NavLink
                       to="account/loginchoice"
+                      className={({ isActive }) =>
+                        [
+                          "block px-4 py-3 text-sm font-semibold",
+                          isActive
+                            ? "bg-violet-50 text-violet-700"
+                            : "text-violet-600 hover:bg-violet-50",
+                        ].join(" ")
+                      }
                       onClick={() => setOpen(false)}
-                      className="block px-4 py-3 text-sm font-semibold text-violet-600 hover:bg-violet-50"
                     >
                       로그인
-                    </Link>
-                    <Link
+                    </NavLink>
+                    <NavLink
                       to="account/signupchoice"
+                      className={({ isActive }) =>
+                        [
+                          "block px-4 py-3 text-sm font-semibold",
+                          isActive
+                            ? "bg-violet-50 text-violet-700"
+                            : "text-violet-600 hover:bg-violet-50",
+                        ].join(" ")
+                      }
                       onClick={() => setOpen(false)}
-                      className="block px-4 py-3 text-sm font-semibold text-violet-600 hover:bg-violet-50"
                     >
                       회원가입
-                    </Link>
+                    </NavLink>
                   </>
                 )}
               </div>
