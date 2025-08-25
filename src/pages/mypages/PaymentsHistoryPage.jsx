@@ -1,41 +1,17 @@
 // src/pages/PaymentsHistoryPage.jsx
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useMemo } from "react";
 import { useOutletContext } from "react-router-dom";
-import { useSelector } from "react-redux";
-import { getMyPayments } from "../../services/api/myPageApi";
 
 export default function PaymentsHistoryPage() {
-  // 레이아웃에서 내려주는 초기값(있으면 초기에 표시)
-  const { payments: initialPayments = [] } = useOutletContext() ?? {};
-  const accessToken = useSelector((s) => s.auth?.accessToken) ?? null;
-
-  const [rows, setRows] = useState(initialPayments);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState(null);
-  const acRef = useRef(null);
-
-  useEffect(() => {
-    acRef.current?.abort?.();
-    const ac = new AbortController();
-    acRef.current = ac;
-
-    setLoading(true);
-    setErr(null);
-    getMyPayments({ accessToken, signal: ac.signal })
-      .then((list) => setRows(list))
-      .catch((e) => setErr(e?.message || "결제 내역을 가져오지 못했습니다."))
-      .finally(() => setLoading(false));
-
-    return () => ac.abort();
-  }, [accessToken]);
+  const { payments = [] } = useOutletContext() ?? {};
 
   const sortedRows = useMemo(() => {
-    return [...(rows || [])].sort((a, b) => {
+    return [...(payments || [])].sort((a, b) => {
       const da = new Date(String(a?.paymentDate ?? "").replace(" ", "T"));
       const db = new Date(String(b?.paymentDate ?? "").replace(" ", "T"));
       return db - da;
     });
-  }, [rows]);
+  }, [payments]);
 
   const fmtKrw = (n) =>
     n == null ? "-" : `${new Intl.NumberFormat("ko-KR").format(Number(n))}원`;
@@ -60,23 +36,7 @@ export default function PaymentsHistoryPage() {
             </tr>
           </thead>
           <tbody>
-            {loading && (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-gray-500">
-                  불러오는 중…
-                </td>
-              </tr>
-            )}
-
-            {!loading && err && (
-              <tr>
-                <td colSpan={4} className="px-4 py-6 text-center text-red-600">
-                  {err}
-                </td>
-              </tr>
-            )}
-
-            {!loading && !err && sortedRows.length === 0 && (
+            {sortedRows.length === 0 && (
               <tr>
                 <td colSpan={4} className="px-4 py-6 text-center text-gray-500">
                   결제내역이 없습니다.
@@ -84,19 +44,23 @@ export default function PaymentsHistoryPage() {
               </tr>
             )}
 
-            {!loading &&
-              !err &&
-              sortedRows.map((p, idx) => (
-                <tr key={`${p?.courseId ?? idx}-${idx}`} className="border-t">
+            {sortedRows.map((p, idx) => {
+              const key =
+                p?.courseId != null && p?.paymentDate
+                  ? `${p.courseId}-${p.paymentDate}`
+                  : `row-${idx}`;
+              return (
+                <tr key={key} className="border-t">
                   <td className="px-4 py-4">
                     <div className="truncate">{p?.courseName || "-"}</div>
                   </td>
                   <td className="px-4 py-4">{onlyDate(p?.paymentDate)}</td>
                   <td className="px-4 py-4">{fmtKrw(p?.price)}</td>
-                  {/* /api/payment/me 응답에 상태 필드가 없으므로 표시는 고정 */}
+                  {/* 상태 필드가 없으므로 고정 표기 */}
                   <td className="px-4 py-4">결제 완료</td>
                 </tr>
-              ))}
+              );
+            })}
           </tbody>
         </table>
 
