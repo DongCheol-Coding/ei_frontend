@@ -14,7 +14,7 @@ export default function PaymentsHistoryPage() {
   }, [payments]);
 
   const fmtKrw = (n) =>
-    n == null ? "-" : `${new Intl.NumberFormat("ko-KR").format(Number(n))}원`;
+    n == null ? "-" : `${new Intl.NumberFormat("ko-KR").format(Number(n))}만원`;
   const onlyDate = (s) =>
     typeof s === "string" && s.length >= 10 ? s.slice(0, 10) : "-";
 
