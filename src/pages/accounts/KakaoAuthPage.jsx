@@ -61,7 +61,7 @@ export default function KakaoAuthPage() {
         setTimeout(() => {
           const qs = new URLSearchParams(location.search);
           qs.set("error", "auth_failed");
-          navigate(`/account/login?${qs.toString()}`, { replace: true });
+          navigate(`/account/login?}`, { replace: true });
         }, 1200);
       }
     })();

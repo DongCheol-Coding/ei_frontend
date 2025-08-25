@@ -55,48 +55,36 @@ export default function EmailAuthPage() {
         return next;
       });
     }, 200);
-
     (async () => {
       try {
-        setError("");
-
-        const at = extractAccessToken(location);
-        if (!at) throw new Error("토큰이 없습니다.");
-        stripTokenFromUrl();
-
-        const res = await api.get("/api/auth/me", {
-          headers: { Authorization: `Bearer ${at}` },
-          withCredentials: true,
-        });
-
-        const user = res?.data?.data ?? res?.data ?? null;
-        if (!user) throw new Error("사용자 정보를 불러오지 못했습니다.");
-
+        const res = await api.get("/api/auth/me"); // HttpOnly 쿠키 기반 세션 확인
+        const user = res.data?.data;
         dispatch(setUser(user));
         dispatch(setHydrated(true));
 
         doneRef.current = true;
         setProgress(100);
-        setStatus("이메일 로그인 성공! 이동합니다...");
+        setStatus("카카오 로그인 성공! 이동합니다...");
 
         const next = sessionStorage.getItem("returnTo");
         sessionStorage.removeItem("returnTo");
+
         setTimeout(() => {
           navigate(next && next.startsWith("/mypage") ? next : "/mypage", {
             replace: true,
           });
         }, 500);
       } catch (e) {
-        console.error(e);
         doneRef.current = true;
         setError("인증에 실패했습니다. 다시 로그인해 주세요.");
-        setStatus("이메일 로그인 실패");
+        setStatus("카카오 로그인 실패");
         setProgress(0);
 
+        // 1.2초 후 로그인 화면으로
         setTimeout(() => {
           const qs = new URLSearchParams(location.search);
           qs.set("error", "auth_failed");
-          navigate(`/account/login?${qs.toString()}`, { replace: true });
+          navigate(`/account/login}`, { replace: true });
         }, 1200);
       }
     })();
