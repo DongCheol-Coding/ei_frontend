@@ -59,7 +59,7 @@ export default function courseRouter() {
       ],
     },
     {
-      path: "kakaopay",
+      path: "kakaopay/success",
       element: (
         <Suspense fallback={<LoadingPage />}>
           <KakaoPayApprovePage />
