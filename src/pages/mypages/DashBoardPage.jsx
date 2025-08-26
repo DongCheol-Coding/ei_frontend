@@ -144,42 +144,81 @@ export default function MyPageLandingPage() {
     return x;
   };
 
-  function WeeksPreview({ paymentDateStr }) {
+  function WeeksPreview({ paymentDateStr, attendedDates = [] }) {
     if (!paymentDateStr) return null;
     const pay = parseLocalDateTime(paymentDateStr);
     if (!pay || Number.isNaN(pay.getTime())) return null;
+
+    // 오늘(로컬) 기준일: 00시로 맞춰서 날짜만 비교
+    const today = stripTime(new Date());
+
+    // 출석일(문자열 배열)을 날짜 key(Set)로 변환: 'YYYY-MM-DD'
+    const attendedSet = new Set(
+      (Array.isArray(attendedDates) ? attendedDates : []).map((s) => String(s))
+    );
+    const toKey = (d) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
+        d.getDate()
+      ).padStart(2, "0")}`;
 
     const payD0 = stripTime(pay);
     const week1Mon = startOfWeekMon(payD0);
     const week1Sun = addDays(week1Mon, 6);
 
+    // 1주차: 결제일~그 주 일요일
     const week1Days = [];
     for (let d = new Date(payD0); d <= week1Sun; d = addDays(d, 1)) {
       week1Days.push(new Date(d));
     }
 
+    // 2~4주차: 다음 주 월~일
     const weeks = [{ label: "1주차", days: week1Days }];
     let nextMon = addDays(week1Sun, 1);
     for (let w = 2; w <= 4; w++) {
       const days = [];
-      for (let i = 0; i < 7; i++) {
-        days.push(addDays(nextMon, i));
-      }
+      for (let i = 0; i < 7; i++) days.push(addDays(nextMon, i));
       weeks.push({ label: `${w}주차`, days });
       nextMon = addDays(nextMon, 7);
     }
 
-    const DayDot = ({ d }) => (
-      <div
-        className="w-8 h-8 rounded-full grid place-items-center text-[13px] font-semibold select-none bg-gray-300 text-gray-700"
-        title={`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-          2,
-          "0"
-        )}-${String(d.getDate()).padStart(2, "0")}`}
-      >
-        {d.getDate()}
-      </div>
-    );
+    // DayDot: 오늘/출석 여부에 따라 스타일 변경
+    const DayDot = ({ d }) => {
+      const isToday = stripTime(d).getTime() === today.getTime();
+      const isAttended = attendedSet.has(toKey(d)); // (미사용 시 항상 false)
+
+      // 기본 배경/텍스트
+      let classes =
+        "grid place-items-center rounded-full select-none text-[13px] font-semibold transition-all";
+      let size = "w-8 h-8";
+      let colors = "bg-gray-300 text-gray-700";
+      let ring = "";
+
+      if (isAttended) {
+        // 추후 출석 디자인: 예) 파란 배경
+        colors = "bg-blue-500 text-white";
+      }
+      if (isToday) {
+        // 오늘 강조: 크기 확대 + 링
+        size = "w-10 h-10";
+        ring = "ring-2 ring-rose-400";
+        // 오늘 + 출석일이면 대비를 위해 조금 더 진하게
+        colors = isAttended
+          ? "bg-blue-600 text-white"
+          : "bg-gray-400 text-white";
+      }
+
+      return (
+        <div
+          className={`${size} ${classes} ${colors} ${ring}`}
+          title={`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
+            2,
+            "0"
+          )}-${String(d.getDate()).padStart(2, "0")}`}
+        >
+          {d.getDate()}
+        </div>
+      );
+    };
 
     return (
       <div className="mt-2">
