@@ -1,14 +1,12 @@
 // src/pages/MyPageLandingPage.jsx
 /*
-[변경 요약]
-- 상위(MyPageLayout)에서 내려준 latestPaidCourseId와 payments를 사용.
-- 드롭박스에서 "전체" 제거.
-- 옵션 정렬: [latestPaidCourseId가 있다면 최상단] -> [나머지 courseId 오름차순].
-- 초기 선택값을 정렬된 첫 옵션으로 설정.
-- 선택된 courseId의 카드만 표시.
-- [추가됨] 부모 payments에서 courseId가 같은 결제의 paymentDate를 찾아 카드에 표시.
+[수정됨]
+- 진행률 계산을 progressPercent(신규 스키마) 기반으로 변경(0~100 clamp, 소수 1자리 표시)
+- navigate 시 totalLectures, completedLectures를 state로 전달
+- Fragment에 key 부여로 React key 경고 방지
 */
-import { useEffect, useMemo, useRef, useState } from "react";
+
+import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { getMyCourses } from "../../services/api/myPageApi";
@@ -16,7 +14,6 @@ import { getMyCourses } from "../../services/api/myPageApi";
 const FALLBACK_IMG = "https://placehold.co/300x200";
 
 export default function MyPageLandingPage() {
-  // [수정됨] payments 함께 수신
   const { latestPaidCourseId, payments = [] } = useOutletContext() ?? {};
   const accessToken = useSelector((s) => s.auth?.accessToken) ?? null;
   const navigate = useNavigate();
@@ -43,27 +40,27 @@ export default function MyPageLandingPage() {
     return () => ac.abort();
   }, [accessToken]);
 
-  const toPct = (p, done, total) => {
-    let val =
-      p != null && !Number.isNaN(p)
-        ? Number(p)
-        : done != null && total
-        ? Math.min(1, Math.max(0, done / total))
-        : 0;
-    val = Math.min(1, Math.max(0, val));
-    return Math.round(val * 100);
+  const clampPercent = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 0;
+    return Math.min(100, Math.max(0, n));
   };
+  const fmtPercent = (n) => (Number.isInteger(n) ? String(n) : n.toFixed(1));
 
+  // progressPercent 우선 사용(없으면 구버전 progress*100 추정)
   const viewRows = useMemo(
     () =>
-      (rows ?? []).map((c) => ({
-        ...c,
-        __percent: toPct(c?.progress, c?.completedCount, c?.totalCount),
-      })),
+      (rows ?? []).map((c) => {
+        const rawPct =
+          c?.progressPercent ??
+          (c?.progress != null ? Number(c.progress) * 100 : 0);
+        const __percent = clampPercent(rawPct);
+        return { ...c, __percent, __percentText: fmtPercent(__percent) };
+      }),
     [rows]
   );
 
-  // [추가됨] 코스별 최신 결제 찾기(동일 코스 다중 결제 대비)
+  // 코스별 최신 결제 찾기
   const paymentByCourse = useMemo(() => {
     const map = new Map();
     for (const p of Array.isArray(payments) ? payments : []) {
@@ -81,7 +78,7 @@ export default function MyPageLandingPage() {
     return map;
   }, [payments]);
 
-  // 드롭박스 옵션(중복 제거) + 정렬 규칙 적용
+  // 드롭박스 옵션(중복 제거) + 정렬
   const options = useMemo(() => {
     const titleById = new Map();
     for (const c of viewRows) {
@@ -89,9 +86,7 @@ export default function MyPageLandingPage() {
       if (!Number.isFinite(id)) continue;
       if (!titleById.has(id)) titleById.set(id, c?.courseTitle || "제목 없음");
     }
-
     const idsAsc = Array.from(titleById.keys()).sort((a, b) => a - b);
-
     const ordered = [];
     if (
       latestPaidCourseId != null &&
@@ -102,14 +97,13 @@ export default function MyPageLandingPage() {
     for (const id of idsAsc) {
       if (id !== Number(latestPaidCourseId)) ordered.push(id);
     }
-
     return ordered.map((id) => ({
       value: String(id),
       label: titleById.get(id),
     }));
   }, [viewRows, latestPaidCourseId]);
 
-  // 옵션 준비 후 초기 선택값 설정(또는 보정)
+  // 초기 선택값 설정/보정
   useEffect(() => {
     if (!options.length) return;
     if (!options.some((op) => op.value === selected)) {
@@ -159,13 +153,11 @@ export default function MyPageLandingPage() {
     const week1Mon = startOfWeekMon(payD0);
     const week1Sun = addDays(week1Mon, 6);
 
-    // 1주차: 결제일~그 주 일요일
     const week1Days = [];
     for (let d = new Date(payD0); d <= week1Sun; d = addDays(d, 1)) {
       week1Days.push(new Date(d));
     }
 
-    // 2~4주차: 다음 주 월~일
     const weeks = [{ label: "1주차", days: week1Days }];
     let nextMon = addDays(week1Sun, 1);
     for (let w = 2; w <= 4; w++) {
@@ -259,20 +251,21 @@ export default function MyPageLandingPage() {
           const img = (c?.imageUrl ?? "").trim() || FALLBACK_IMG;
           const cid = Number(c?.courseId);
           const pay = paymentByCourse.get(cid);
-          const payDate = pay?.paymentDate; // 원문 문자열 그대로 표시
+          const payDate = pay?.paymentDate;
 
           return (
-            <>
-              <div className="flex flex-col gap-6 sm:flex-row items-center sm:items-stretch rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
-                <div className="mt-1 text-xs text-gray-500">
+            <Fragment key={c?.courseId ?? idx}>
+              {/* 결제일 + 주차 미리보기 */}
+              <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                <div className="text-xs text-gray-500">
                   결제일: {payDate ? payDate : "결제 이력 없음"}
-                  <WeeksPreview paymentDateStr={payDate} />
                 </div>
+                <WeeksPreview paymentDateStr={payDate} />
               </div>
-              <div
-                key={c?.courseId ?? idx}
-                className="flex flex-col gap-6 sm:flex-row items-center sm:items-stretch rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
-              >
+
+              {/* 코스 카드 */}
+              <div className="flex flex-col gap-6 sm:flex-row items-center sm:items-stretch rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+                {/* 썸네일 */}
                 <div className="w-full sm:w-60 shrink-0">
                   <img
                     src={img}
@@ -284,6 +277,7 @@ export default function MyPageLandingPage() {
                   />
                 </div>
 
+                {/* 제목 + 진행률 */}
                 <div className="flex-1 w-full">
                   <div className="text-base sm:text-lg font-semibold line-clamp-2">
                     {c?.courseTitle || "제목 없음"}
@@ -298,11 +292,12 @@ export default function MyPageLandingPage() {
                     </div>
                     <div className="mt-2 text-xs text-gray-600 flex justify-between">
                       <span>달성률</span>
-                      <span>{c.__percent}%</span>
+                      <span>{c.__percentText}%</span>
                     </div>
                   </div>
                 </div>
 
+                {/* 액션 */}
                 <div className="w-full sm:w-auto flex sm:flex-col gap-3 sm:justify-center sm:items-center">
                   <button
                     type="button"
@@ -313,6 +308,10 @@ export default function MyPageLandingPage() {
                           courseId: c?.courseId,
                           courseTitle: c?.courseTitle ?? "",
                           imageUrl: c?.imageUrl ?? null,
+                          // 강의 페이지에서 총/완료 개수 표시에 사용
+                          totalLectures: c?.totalLectures ?? c?.totalCount ?? 0,
+                          completedLectures:
+                            c?.completedLectures ?? c?.completedCount ?? 0,
                         },
                         replace: false,
                       })
@@ -323,7 +322,7 @@ export default function MyPageLandingPage() {
                   </button>
                 </div>
               </div>
-            </>
+            </Fragment>
           );
         })}
     </div>
