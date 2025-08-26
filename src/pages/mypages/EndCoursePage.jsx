@@ -1,13 +1,3 @@
-// src/pages/EndCoursePage.jsx
-/*
-[수정됨]
-1) 진행률 계산: progressPercent를 그대로 사용
-   - __percent = progressPercent (clamp 0~100)
-   - 표시 텍스트는 정수면 정수, 아니면 소수점 1자리
-2) 노출 조건: completed === true 인 강의만 노출
-   - completed 누락 시 안전장치로 __percent === 100 사용
-*/
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext, useNavigate } from "react-router-dom";

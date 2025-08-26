@@ -1,13 +1,3 @@
-// src/pages/LectureListPage.jsx
-/*
-[수정됨]
-- 부모(Ing/End)에서 내려준 totalLectures, completedLectures를 읽어 사이드바 상단에
-  "전체 강의 : {total} / 수강 완료 : {completed}" 표시
-- 부모 값이 없을 때를 대비해 파생값으로 대체:
-  - total = viewRows.length
-  - completed = viewRows 중 (__percent === 100)이거나 l.completed === true 인 개수
-*/
-
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
