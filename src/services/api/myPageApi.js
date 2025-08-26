@@ -153,7 +153,6 @@ export async function getMyPayments(argOrOpts = {}) {
   }
 }
 
-// [수정됨] imageUrl만 사용하도록 응답 정규화 간소화
 export async function getMyCourses(argOrOpts = {}) {
   // 인자 정규화
   let token = null;
@@ -185,27 +184,47 @@ export async function getMyCourses(argOrOpts = {}) {
 
     const list = Array.isArray(body?.data?.content) ? body.data.content : [];
 
-    // imageUrl만 사용
-    return list.map((c) => ({
-      courseId: c?.courseId != null ? Number(c.courseId) : null,
-      courseTitle: typeof c?.courseTitle === "string" ? c.courseTitle : "",
-      imageUrl:
-        typeof c?.imageUrl === "string" && c.imageUrl.trim()
-          ? c.imageUrl.trim()
-          : null,
-      progress:
-        c?.progress != null && !Number.isNaN(Number(c.progress))
-          ? Number(c.progress)
-          : 0,
-      completedCount:
-        c?.completedCount != null && !Number.isNaN(Number(c.completedCount))
-          ? Number(c.completedCount)
-          : 0,
-      totalCount:
-        c?.totalCount != null && !Number.isNaN(Number(c.totalCount))
-          ? Number(c.totalCount)
-          : 0,
-    }));
+    // imageUrl만 사용(이미지 경로), + 새 progress 스키마 반영
+    return list.map((c) => {
+      const p = c?.progress ?? {};
+      const progressPercent =
+        p?.progressPercent != null && !Number.isNaN(Number(p.progressPercent))
+          ? Number(p.progressPercent)
+          : 0;
+
+      const completedLectures =
+        p?.completedLectures != null &&
+        !Number.isNaN(Number(p.completedLectures))
+          ? Number(p.completedLectures)
+          : 0;
+
+      const totalLectures =
+        p?.totalLectures != null && !Number.isNaN(Number(p.totalLectures))
+          ? Number(p.totalLectures)
+          : 0;
+
+      const completed = Boolean(p?.completed);
+
+      return {
+        courseId: c?.courseId != null ? Number(c.courseId) : null,
+        courseTitle: typeof c?.courseTitle === "string" ? c.courseTitle : "",
+        imageUrl:
+          typeof c?.imageUrl === "string" && c.imageUrl.trim()
+            ? c.imageUrl.trim()
+            : null,
+
+        // ---- 하위 호환 필드(기존 UI 사용 가능) ----
+        progress: progressPercent, // (기존) 퍼센트 수치
+        completedCount: completedLectures, // (기존)
+        totalCount: totalLectures, // (기존)
+
+        // ---- 신규 필드(백엔드 스키마 그대로 노출) ----
+        progressPercent, // 0.0 ~ 100.0
+        completedLectures,
+        totalLectures,
+        completed,
+      };
+    });
   } catch (err) {
     if (!err?.response) {
       throw new Error("네트워크/CORS 오류로 코스 목록을 가져오지 못했습니다.");
@@ -213,6 +232,7 @@ export async function getMyCourses(argOrOpts = {}) {
     throw err;
   }
 }
+
 
 export async function updateLectureProgress({
   lectureId,

@@ -1,4 +1,13 @@
 // src/pages/EndCoursePage.jsx
+/*
+[수정됨]
+1) 진행률 계산: progressPercent를 그대로 사용
+   - __percent = progressPercent (clamp 0~100)
+   - 표시 텍스트는 정수면 정수, 아니면 소수점 1자리
+2) 노출 조건: completed === true 인 강의만 노출
+   - completed 누락 시 안전장치로 __percent === 100 사용
+*/
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext, useNavigate } from "react-router-dom";
@@ -28,37 +37,40 @@ export default function EndCoursePage() {
       .then((list) => {
         setRows(Array.isArray(list) ? list : []);
       })
-      .catch((e) =>
-        setErr(e?.message || "수강중인 강의를 가져오지 못했습니다.")
-      )
+      .catch((e) => setErr(e?.message || "강의 목록을 가져오지 못했습니다."))
       .finally(() => setLoading(false));
 
     return () => ac.abort();
   }, [accessToken]);
 
-  const toPct = (p, done, total) => {
-    let val =
-      p != null && !Number.isNaN(p)
-        ? Number(p)
-        : done != null && total
-        ? Math.min(1, Math.max(0, done / total))
-        : 0;
-    val = Math.min(1, Math.max(0, val));
-    return Math.round(val * 100);
+  const clampPercent = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 0;
+    return Math.min(100, Math.max(0, n));
+  };
+
+  const fmtPercent = (n) => {
+    return Number.isInteger(n) ? String(n) : n.toFixed(1);
   };
 
   const viewRows = useMemo(
     () =>
-      (rows ?? []).map((c) => ({
-        ...c,
-        __percent: toPct(c?.progress, c?.completedCount, c?.totalCount),
-      })),
+      (rows ?? []).map((c) => {
+        const percentRaw = c?.progressPercent ?? c?.progress ?? 0; // 구버전 호환
+        const __percent = clampPercent(percentRaw);
+        return { ...c, __percent };
+      }),
     [rows]
   );
 
-  // 완료만 노출 (=== 100)
+  // 완료만 노출: completed === true
   const courses = useMemo(
-    () => viewRows.filter((c) => c.__percent === 100),
+    () =>
+      viewRows.filter(
+        (c) =>
+          c?.completed === true ||
+          (c?.completed === undefined && c.__percent === 100)
+      ),
     [viewRows]
   );
 
@@ -91,12 +103,14 @@ export default function EndCoursePage() {
         !err &&
         courses.map((c, idx) => {
           const img = (c?.imageUrl ?? "").trim() || FALLBACK_IMG;
+          const percentText = fmtPercent(c.__percent);
+
           return (
             <div
               key={c?.courseId ?? idx}
               className="flex flex-col gap-6 sm:flex-row items-center sm:items-stretch rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
             >
-              {/* 왼쪽: 썸네일 */}
+              {/* 썸네일 */}
               <div className="w-full sm:w-60 shrink-0">
                 <img
                   src={img}
@@ -108,7 +122,7 @@ export default function EndCoursePage() {
                 />
               </div>
 
-              {/* 가운데: 제목 + 진행률 */}
+              {/* 제목 + 진행률 */}
               <div className="flex-1 w-full">
                 <div className="text-base sm:text-lg font-semibold line-clamp-2">
                   {c?.courseTitle || "제목 없음"}
@@ -123,12 +137,12 @@ export default function EndCoursePage() {
                   </div>
                   <div className="mt-2 text-xs text-gray-600 flex justify-between">
                     <span>달성률</span>
-                    <span>{c.__percent}%</span>
+                    <span>{percentText}%</span>
                   </div>
                 </div>
               </div>
 
-              {/* 오른쪽 */}
+              {/* 우측 액션 */}
               <div className="w-full sm:w-auto flex sm:flex-col gap-3 sm:justify-center sm:items-center">
                 <button
                   type="button"
@@ -139,6 +153,9 @@ export default function EndCoursePage() {
                         courseId: c?.courseId,
                         courseTitle: c?.courseTitle ?? "",
                         imageUrl: c?.imageUrl ?? null,
+                        totalLectures: c?.totalLectures ?? c?.totalCount ?? 0,
+                        completedLectures:
+                          c?.completedLectures ?? c?.completedCount ?? 0,
                       },
                       replace: false,
                     })

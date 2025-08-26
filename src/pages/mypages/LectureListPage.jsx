@@ -1,4 +1,13 @@
 // src/pages/LectureListPage.jsx
+/*
+[수정됨]
+- 부모(Ing/End)에서 내려준 totalLectures, completedLectures를 읽어 사이드바 상단에
+  "전체 강의 : {total} / 수강 완료 : {completed}" 표시
+- 부모 값이 없을 때를 대비해 파생값으로 대체:
+  - total = viewRows.length
+  - completed = viewRows 중 (__percent === 100)이거나 l.completed === true 인 개수
+*/
+
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useSelector } from "react-redux";
@@ -6,13 +15,11 @@ import {
   getCourseLectures,
   getLectureDetail,
 } from "../../services/api/courseApi";
-// 진행도 업데이트 API
 import { updateLectureProgress } from "../../services/api/myPageApi";
 
-// 진행도 자동 저장 설정
-const SAVE_EVERY_SEC = 10; // 주기 저장(10초마다). 5로 줄이면 5초 저장
-const FIRST_SAVE_AT_SEC = 2; // 최초 저장 임계치(2초 도달 시 1회 저장)
-const LAST_FLUSH_GUARD_MS = 1200; // 연속 플러시 최소 간격(ms)
+const SAVE_EVERY_SEC = 10;
+const FIRST_SAVE_AT_SEC = 2;
+const LAST_FLUSH_GUARD_MS = 1200;
 
 const toHMS = (sec) => {
   const s = Math.max(0, Number(sec || 0));
@@ -33,6 +40,16 @@ export default function LectureListPage() {
   const { state } = useLocation();
   const courseTitle = state?.courseTitle ?? `코스 #${courseId}`;
 
+  // [추가됨] 부모에서 내려준 완료/전체 강의 수(있으면 우선 사용)
+  const parentTotalLectures = Number.isFinite(Number(state?.totalLectures))
+    ? Number(state.totalLectures)
+    : null;
+  const parentCompletedLectures = Number.isFinite(
+    Number(state?.completedLectures)
+  )
+    ? Number(state.completedLectures)
+    : null;
+
   const [rows, setRows] = useState([]);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState(null);
@@ -50,20 +67,18 @@ export default function LectureListPage() {
   const listAcRef = useRef(null);
   const vidAcRef = useRef(null);
 
-  // 비디오/진행도 관련 refs
   const videoRef = useRef(null);
   const progressAcRef = useRef(null);
-  const lastSavedBucketRef = useRef(-1); // 버킷 기반 중복 방지
-  const firstSavedRef = useRef(false); // 최초 임계치(2초) 저장 여부
-  const lastFlushAtRef = useRef(0); // 플러시 스팸 방지
-  const canonicalDurRef = useRef(0); // 완료 시간 계산용 기준 길이(초)
+  const lastSavedBucketRef = useRef(-1);
+  const firstSavedRef = useRef(false);
+  const lastFlushAtRef = useRef(0);
+  const canonicalDurRef = useRef(0);
 
   const selectedRow = useMemo(
     () => (rows ?? []).find((l) => l.id === selectedId) || null,
     [rows, selectedId]
   );
 
-  // 강의 목록 로드
   useEffect(() => {
     if (!Number.isFinite(courseId) || courseId <= 0) {
       setErr("유효한 코스 ID가 아닙니다.");
@@ -83,7 +98,6 @@ export default function LectureListPage() {
     return () => ac.abort();
   }, [courseId, accessToken]);
 
-  // 선택된 강의 상세(영상 URL) 로드
   useEffect(() => {
     if (!selectedId) {
       setVideo({ url: null, title: "", durationSec: 0, description: "" });
@@ -111,7 +125,6 @@ export default function LectureListPage() {
       })
       .finally(() => setVideoLoading(false));
 
-    // 새 강의 선택 시 초기화
     lastSavedBucketRef.current = -1;
     firstSavedRef.current = false;
     lastFlushAtRef.current = 0;
@@ -130,7 +143,18 @@ export default function LectureListPage() {
     [rows, selectedId]
   );
 
-  // 진행도 저장(요청 중복/폭주 방지)
+  // [추가됨] 완료/전체 파생값 계산 (부모 값이 있으면 우선 사용)
+  const derivedTotal = useMemo(
+    () => parentTotalLectures ?? viewRows.length,
+    [parentTotalLectures, viewRows.length]
+  );
+  const derivedCompleted = useMemo(() => {
+    if (parentCompletedLectures != null) return parentCompletedLectures;
+    return viewRows.filter((l) => l.__percent === 100 || l?.completed === true)
+      .length;
+  }, [parentCompletedLectures, viewRows]);
+
+  // 이하 기존 진행도 저장/플러시 로직 그대로 …
   const postProgress = useCallback(
     async (sec) => {
       if (!Number.isInteger(sec) || sec < 0) return;
@@ -147,14 +171,11 @@ export default function LectureListPage() {
           accessToken,
           signal: ac.signal,
         });
-      } catch {
-        // 무음 처리(원하면 toast로 변경)
-      }
+      } catch {}
     },
     [selectedId, accessToken]
   );
 
-  // 이탈/새로고침 플러시(keepalive fetch 또는 sendBeacon)
   const flushProgressOnExit = useCallback(
     (sec) => {
       if (!selectedId) return;
@@ -184,22 +205,17 @@ export default function LectureListPage() {
     [selectedId, accessToken]
   );
 
-  // 재생 중 자동 저장: 최초 2초 1회 + SAVE_EVERY_SEC 버킷마다
   const handleTimeUpdate = useCallback(() => {
     const v = videoRef.current;
     if (!v || v.paused) return;
 
     const t = Math.floor(v.currentTime || 0);
-
-    // 최초 임계치 저장
     if (!firstSavedRef.current && t >= FIRST_SAVE_AT_SEC) {
       firstSavedRef.current = true;
       lastSavedBucketRef.current = Math.floor(t / SAVE_EVERY_SEC);
       postProgress(t);
       return;
     }
-
-    // 버킷 저장
     const bucket = Math.floor(t / SAVE_EVERY_SEC);
     if (bucket > lastSavedBucketRef.current) {
       lastSavedBucketRef.current = bucket;
@@ -207,7 +223,6 @@ export default function LectureListPage() {
     }
   }, [postProgress]);
 
-  // 시킹 직후 저장(점프 후 즉시 이탈 대비)
   const handleSeeked = useCallback(() => {
     const v = videoRef.current;
     const t = Math.floor(v?.currentTime || 0);
@@ -222,7 +237,6 @@ export default function LectureListPage() {
     }
   }, [postProgress]);
 
-  // 일시정지 시 플러시(스팸 방지)
   const handlePause = useCallback(() => {
     const now = Date.now();
     if (now - lastFlushAtRef.current < LAST_FLUSH_GUARD_MS) return;
@@ -232,7 +246,6 @@ export default function LectureListPage() {
     postProgress(t);
   }, [postProgress]);
 
-  // 종료 시 최종 시간(초) 저장 + 즉시 flush
   const handleEnded = useCallback(() => {
     const v = videoRef.current;
     const domDur = Number.isFinite(v?.duration) ? v.duration : 0;
@@ -240,7 +253,7 @@ export default function LectureListPage() {
     const base =
       canonicalDurRef.current || apiDur || domDur || v?.currentTime || 0;
 
-    const endSec = Math.max(1, Math.round(base)); // 29.98 → 30 등 반올림
+    const endSec = Math.max(1, Math.round(base));
     lastSavedBucketRef.current = Math.floor(endSec / SAVE_EVERY_SEC);
     firstSavedRef.current = true;
 
@@ -248,7 +261,6 @@ export default function LectureListPage() {
     flushProgressOnExit(endSec);
   }, [postProgress, flushProgressOnExit, video?.durationSec]);
 
-  // 메타 로드 시 기준 길이 확정 + 이전 진행률 위치로 점프
   const handleLoadedMetadata = useCallback(
     (e) => {
       const v = e.currentTarget;
@@ -282,7 +294,6 @@ export default function LectureListPage() {
     [selectedRow, video?.durationSec]
   );
 
-  // 탭 이탈/닫힘 시 최종 플러시
   useEffect(() => {
     const onHidden = () => {
       if (!selectedId) return;
@@ -302,7 +313,6 @@ export default function LectureListPage() {
     };
   }, [selectedId, flushProgressOnExit]);
 
-  // 나가기 버튼: 현재 시점 플러시 후 이동
   const handleExit = useCallback(() => {
     if (selectedId) {
       const t = Math.floor(videoRef.current?.currentTime || 0);
@@ -370,6 +380,12 @@ export default function LectureListPage() {
                       강의 목차
                     </div>
                   </div>
+
+                  {/* [추가됨] 전체/완료 개수 표시 */}
+                  <div className="px-3 sm:px-4 pb-2 text-xs text-gray-600">
+                    전체 강의 : {derivedTotal} / 수강 완료 : {derivedCompleted}
+                  </div>
+
                   <div className="px-3 sm:px-4 pb-3 text-xs text-gray-500">
                     총 {viewRows.length}개 강의
                   </div>

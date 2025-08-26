@@ -1,4 +1,3 @@
-// src/pages/IngCoursePage.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext, useNavigate } from "react-router-dom";
@@ -6,11 +5,6 @@ import { getMyCourses } from "../../services/api/myPageApi";
 
 const FALLBACK_IMG = "https://placehold.co/300x200";
 
-/**
- * 변경 사항(문법 오류 수정)
- * - 진행률 바 width: style={{ width: `${c.__percent}%` }}
- * - navigate 경로 문자열: navigate(`/course/${c?.courseId}/lectures`, ...)
- */
 export default function IngCoursePage() {
   const { coursesProgress: initial = [] } = useOutletContext() ?? {};
   const accessToken = useSelector((s) => s.auth?.accessToken) ?? null;
@@ -41,30 +35,36 @@ export default function IngCoursePage() {
     return () => ac.abort();
   }, [accessToken]);
 
-  const toPct = (p, done, total) => {
-    let val =
-      p != null && !Number.isNaN(p)
-        ? Number(p)
-        : done != null && total
-        ? Math.min(1, Math.max(0, done / total))
-        : 0;
-    val = Math.min(1, Math.max(0, val));
-    return Math.round(val * 100);
+  const clampPercent = (v) => {
+    const n = Number(v);
+    if (!Number.isFinite(n)) return 0;
+    return Math.min(100, Math.max(0, n));
   };
 
-  // 한 번만 계산해 __percent를 붙입니다.
+  const fmtPercent = (n) => {
+    // 정수면 정수로, 아니면 소수 1자리
+    return Number.isInteger(n) ? String(n) : n.toFixed(1);
+  };
+
+  // progressPercent(신규 스키마)를 우선 사용. 누락 시 기존 progress 퍼센트도 fallback.
   const viewRows = useMemo(
     () =>
-      (rows ?? []).map((c) => ({
-        ...c,
-        __percent: toPct(c?.progress, c?.completedCount, c?.totalCount),
-      })),
+      (rows ?? []).map((c) => {
+        const percentRaw = c?.progressPercent ?? c?.progress ?? 0; // progress는 구버전 호환
+        const __percent = clampPercent(percentRaw);
+        return { ...c, __percent };
+      }),
     [rows]
   );
 
-  // 진행 중만 노출 (< 100)
+  // 진행 중만 노출: 응답의 completed === false 우선
   const courses = useMemo(
-    () => viewRows.filter((c) => c.__percent < 100),
+    () =>
+      viewRows.filter(
+        (c) =>
+          c?.completed === false || // 신규 스키마 기준
+          (c?.completed === undefined && c.__percent < 100) // 안전장치
+      ),
     [viewRows]
   );
 
@@ -97,13 +97,14 @@ export default function IngCoursePage() {
         !err &&
         courses.map((c, idx) => {
           const img = (c?.imageUrl ?? "").trim() || FALLBACK_IMG;
+          const percentText = fmtPercent(c.__percent);
 
           return (
             <div
               key={c?.courseId ?? idx}
               className="flex flex-col gap-6 sm:flex-row items-center sm:items-stretch rounded-xl border border-gray-200 bg-white p-4 shadow-sm"
             >
-              {/* 왼쪽: 썸네일 */}
+              {/* 썸네일 */}
               <div className="w-full sm:w-60 shrink-0">
                 <img
                   src={img}
@@ -115,7 +116,7 @@ export default function IngCoursePage() {
                 />
               </div>
 
-              {/* 가운데: 제목 + 진행률 */}
+              {/* 제목 + 진행률 */}
               <div className="flex-1 w-full">
                 <div className="text-base sm:text-lg font-semibold line-clamp-2">
                   {c?.courseTitle || "제목 없음"}
@@ -130,12 +131,12 @@ export default function IngCoursePage() {
                   </div>
                   <div className="mt-2 text-xs text-gray-600 flex justify-between">
                     <span>달성률</span>
-                    <span>{c.__percent}%</span>
+                    <span>{percentText}%</span>
                   </div>
                 </div>
               </div>
 
-              {/* 오른쪽 */}
+              {/* 우측 액션 */}
               <div className="w-full sm:w-auto flex sm:flex-col gap-3 sm:justify-center sm:items-center">
                 <button
                   type="button"
@@ -146,6 +147,9 @@ export default function IngCoursePage() {
                         courseId: c?.courseId,
                         courseTitle: c?.courseTitle ?? "",
                         imageUrl: c?.imageUrl ?? null,
+                        totalLectures: c?.totalLectures ?? c?.totalCount ?? 0,
+                        completedLectures:
+                          c?.completedLectures ?? c?.completedCount ?? 0,
                       },
                       replace: false,
                     })
