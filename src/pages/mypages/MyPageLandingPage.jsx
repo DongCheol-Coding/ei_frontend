@@ -10,6 +10,7 @@ import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { getMyCourses } from "../../services/api/myPageApi";
+import WeeksPreview from "../../components/mypage/WeeksPreview";
 
 const FALLBACK_IMG = "https://placehold.co/300x200";
 
@@ -117,127 +118,6 @@ export default function MyPageLandingPage() {
     return viewRows.filter((c) => Number(c?.courseId) === id);
   }, [selected, viewRows]);
 
-  const parseLocalDateTime = (s) => {
-    if (!s || typeof s !== "string") return null;
-    const m = s.match(
-      /^(\d{4})-(\d{2})-(\d{2})[ T](\d{2}):(\d{2})(?::(\d{2}))?$/
-    );
-    if (!m) return new Date(s);
-    const [, yy, mm, dd, HH, MM, SS = "0"] = m;
-    return new Date(+yy, +mm - 1, +dd, +HH, +MM, +SS);
-  };
-  const stripTime = (d) => {
-    const x = new Date(d);
-    x.setHours(0, 0, 0, 0);
-    return x;
-  };
-  const addDays = (d, n) => {
-    const x = new Date(d);
-    x.setDate(x.getDate() + n);
-    return x;
-  };
-  const startOfWeekMon = (d) => {
-    const x = stripTime(d);
-    const dow = x.getDay(); // 0=일..6=토
-    const diff = (dow + 6) % 7; // 월요일까지 며칠 되돌릴지
-    x.setDate(x.getDate() - diff);
-    return x;
-  };
-
-  function WeeksPreview({ paymentDateStr, attendedDates = [] }) {
-    if (!paymentDateStr) return null;
-    const pay = parseLocalDateTime(paymentDateStr);
-    if (!pay || Number.isNaN(pay.getTime())) return null;
-
-    // 오늘(로컬) 기준일: 00시로 맞춰서 날짜만 비교
-    const today = stripTime(new Date());
-
-    // 출석일(문자열 배열)을 날짜 key(Set)로 변환: 'YYYY-MM-DD'
-    const attendedSet = new Set(
-      (Array.isArray(attendedDates) ? attendedDates : []).map((s) => String(s))
-    );
-    const toKey = (d) =>
-      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-        d.getDate()
-      ).padStart(2, "0")}`;
-
-    const payD0 = stripTime(pay);
-    const week1Mon = startOfWeekMon(payD0);
-    const week1Sun = addDays(week1Mon, 6);
-
-    // 1주차: 결제일~그 주 일요일
-    const week1Days = [];
-    for (let d = new Date(payD0); d <= week1Sun; d = addDays(d, 1)) {
-      week1Days.push(new Date(d));
-    }
-
-    // 2~4주차: 다음 주 월~일
-    const weeks = [{ label: "1주차", days: week1Days }];
-    let nextMon = addDays(week1Sun, 1);
-    for (let w = 2; w <= 4; w++) {
-      const days = [];
-      for (let i = 0; i < 7; i++) days.push(addDays(nextMon, i));
-      weeks.push({ label: `${w}주차`, days });
-      nextMon = addDays(nextMon, 7);
-    }
-
-    // DayDot: 오늘/출석 여부에 따라 스타일 변경
-    const DayDot = ({ d }) => {
-      const isToday = stripTime(d).getTime() === today.getTime();
-      const isAttended = attendedSet.has(toKey(d)); // (미사용 시 항상 false)
-
-      // 기본 배경/텍스트
-      let classes =
-        "grid place-items-center rounded-full select-none text-[13px] font-semibold transition-all";
-      let size = "w-8 h-8";
-      let colors = "bg-gray-300 text-gray-700";
-      let ring = "";
-
-      if (isAttended) {
-        // 추후 출석 디자인: 예) 파란 배경
-        colors = "bg-blue-500 text-white";
-      }
-      if (isToday) {
-        // 오늘 강조: 크기 확대 + 링
-        size = "w-10 h-10";
-        ring = "ring-2 ring-rose-400";
-        // 오늘 + 출석일이면 대비를 위해 조금 더 진하게
-        colors = isAttended
-          ? "bg-blue-600 text-white"
-          : "bg-gray-400 text-white";
-      }
-
-      return (
-        <div
-          className={`${size} ${classes} ${colors} ${ring}`}
-          title={`${d.getFullYear()}-${String(d.getMonth() + 1).padStart(
-            2,
-            "0"
-          )}-${String(d.getDate()).padStart(2, "0")}`}
-        >
-          {d.getDate()}
-        </div>
-      );
-    };
-
-    return (
-      <div className="mt-2">
-        <div className="flex items-start gap-4 overflow-x-auto">
-          {weeks.map((wk) => (
-            <div key={wk.label} className="shrink-0">
-              <div className="text-[11px] text-gray-400 mb-1">{wk.label}</div>
-              <div className="flex items-center gap-2 bg-gray-100 px-3 py-3 rounded-xl">
-                {wk.days.map((d) => (
-                  <DayDot key={d.toISOString()} d={d} />
-                ))}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    );
-  }
-
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -295,7 +175,10 @@ export default function MyPageLandingPage() {
           return (
             <Fragment key={c?.courseId ?? idx}>
               {/* 결제일 + 주차 미리보기 */}
-              <div className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm">
+              <div
+                className="flex flex-col gap-2 rounded-xl border border-gray-200 bg-white p-4 shadow-sm
+                w-full min-w-0 overflow-hidden"
+              >
                 <div className="text-xs text-gray-500">
                   결제일: {payDate ? payDate : "결제 이력 없음"}
                 </div>
