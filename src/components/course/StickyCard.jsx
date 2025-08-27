@@ -3,12 +3,12 @@ import { useState } from "react";
 export default function StickyCard({
   top = 110, // px 또는 'calc(...)' 등 문자열 가능
   dDay = 5,
-  title = "1:1 관리형\n풀스택 부트캠프",
+  title = "",
   originalPrice = 0,
   priceNow = 0,
   refundNote = "*미션 달성 시 수강료 환급",
   mode = "100% 온라인",
-  badge = "취준생 전용 20주 과정",
+  badge = "예비 개발자 전용 8주 과정",
   ctaText = "취업보장 받기",
   onCtaClick = null,
   className = "",
@@ -17,7 +17,7 @@ export default function StickyCard({
   const [open, setOpen] = useState(true);
   const priceFmt = (n) => n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
 
-  const displayTitle = String(title ?? "1:1 관리형\n풀스택 부트캠프");
+  const displayTitle = String(title ?? "");
   const displayOriginalPrice = Number.isFinite(Number(originalPrice))
     ? Number(originalPrice)
     : 0;
