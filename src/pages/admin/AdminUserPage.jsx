@@ -160,9 +160,9 @@ export default function AdminUserPage() {
             className="border rounded px-2 py-1.5"
           >
             <option value="">전체</option>
-            <option value="ADMIN">ADMIN</option>
-            <option value="SUPPORT">SUPPORT</option>
-            <option value="MEMBER">MEMBER</option>
+            <option value="ROLE_ADMIN">ADMIN</option>
+            <option value="ROLE_SUPPORT">SUPPORT</option>
+            <option value="ROLE_MEMBER">MEMBER</option>
           </select>
         </div>
 
