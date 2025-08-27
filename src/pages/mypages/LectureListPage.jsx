@@ -133,7 +133,6 @@ export default function LectureListPage() {
     [rows, selectedId]
   );
 
-  // [추가됨] 완료/전체 파생값 계산 (부모 값이 있으면 우선 사용)
   const derivedTotal = useMemo(
     () => parentTotalLectures ?? viewRows.length,
     [parentTotalLectures, viewRows.length]
@@ -144,27 +143,61 @@ export default function LectureListPage() {
       .length;
   }, [parentCompletedLectures, viewRows]);
 
-  // 이하 기존 진행도 저장/플러시 로직 그대로 …
-  const postProgress = useCallback(
-    async (sec) => {
-      if (!Number.isInteger(sec) || sec < 0) return;
-      if (!selectedId) return;
+const postProgress = useCallback(
+  async (sec) => {
+    if (!Number.isInteger(sec) || sec < 0) return;
+    if (!selectedId) return;
 
-      progressAcRef.current?.abort?.();
-      const ac = new AbortController();
-      progressAcRef.current = ac;
+    progressAcRef.current?.abort?.();
+    const ac = new AbortController();
+    progressAcRef.current = ac;
 
-      try {
-        await updateLectureProgress({
-          lectureId: selectedId,
-          watchedSec: sec,
-          accessToken,
-          signal: ac.signal,
-        });
-      } catch {}
-    },
-    [selectedId, accessToken]
-  );
+    try {
+      const res = await updateLectureProgress({
+        lectureId: selectedId,
+        watchedSec: sec,
+        accessToken,
+        signal: ac.signal,
+      });
+
+      // 응답 안전 파싱: res?.data?.data 형태 또는 res?.data 형태 모두 수용
+      const payload = res?.data ?? res ?? null;
+      const d = payload?.data ?? payload ?? null;
+
+      // 응답에서 갱신 대상/값 추출 (없으면 selectedId와 기존값 사용)
+      const lectureIdFromApi =
+        (d && Number.isFinite(Number(d.lectureId)) && Number(d.lectureId)) ||
+        selectedId;
+
+      const nextProgress =
+        d && Number.isFinite(Number(d.lectureProgress))
+          ? Number(d.lectureProgress) // 0~1
+          : null;
+
+      const nextCompleted =
+        d && typeof d.lectureCompleted === "boolean"
+          ? d.lectureCompleted
+          : null;
+
+      // rows 즉시 반영 -> __percent는 viewRows(useMemo)에서 자동 재계산됨
+      if (lectureIdFromApi) {
+        setRows((prev) =>
+          (Array.isArray(prev) ? prev : []).map((l) => {
+            if (l.id !== lectureIdFromApi) return l;
+            return {
+              ...l,
+              ...(nextProgress !== null ? { progress: nextProgress } : null),
+              ...(nextCompleted !== null ? { completed: nextCompleted } : null),
+            };
+          })
+        );
+      }
+    } catch {
+      // 무음; 필요 시 토스트로 교체 가능
+    }
+  },
+  [selectedId, accessToken]
+);
 
   const flushProgressOnExit = useCallback(
     (sec) => {
@@ -302,12 +335,26 @@ export default function LectureListPage() {
       document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [selectedId, flushProgressOnExit]);
-
   const handleExit = useCallback(() => {
+    // 현재 영상 일시정지(확인창 동안 재생 방지)
+    const v = videoRef.current;
+    try {
+      v?.pause?.();
+    } catch {}
+
+    // 현재 시점 확보(초)
+    const t = Math.floor(v?.currentTime || 0);
+
+    const ok = window.confirm(
+      "이 페이지를 나가시겠습니까?\n현재 시점이 저장됩니다."
+    );
+    if (!ok) return;
+
+    // 선택된 강의가 있는 경우에만 저장 플러시
     if (selectedId) {
-      const t = Math.floor(videoRef.current?.currentTime || 0);
       flushProgressOnExit(t);
     }
+
     navigate(-1);
   }, [selectedId, navigate, flushProgressOnExit]);
 
