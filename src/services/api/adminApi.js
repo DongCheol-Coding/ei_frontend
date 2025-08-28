@@ -42,3 +42,37 @@ export async function searchUsers(query = {}, opts = {}) {
     throw new Error(msg);
   }
 }
+
+export async function adminDeleteUser(userId, opts = {}) {
+  if (userId === null || userId === undefined) {
+    throw new Error("userId는 필수입니다.");
+  }
+
+  const headers = {};
+  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+
+  try {
+    // adminApi.js가 /admin/users를 base로 쓰는 전제(검색이 "/search"였던 것과 동일 패턴)
+    const res = await api.delete(`api/auth/admin/users/${userId}`, {
+      headers,
+      signal: opts.signal,
+    });
+
+    const body = res?.data ?? null;
+    const success = body?.success ?? true;
+    const message =
+      body?.data || body?.message || "해당 계정이 삭제(탈퇴) 처리되었습니다.";
+
+    return { success, message };
+  } catch (err) {
+    const status = err?.response?.status;
+    const msg =
+      err?.response?.data?.message ||
+      (status === 401
+        ? "인증이 필요합니다."
+        : status === 403
+        ? "권한이 없습니다."
+        : "강제 탈퇴 요청에 실패했습니다.");
+    throw new Error(msg);
+  }
+}

@@ -1,12 +1,14 @@
 // src/pages/admin/AdminUserPage.jsx
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
-import { searchUsers } from "../../services/api/adminApi";
+import { searchUsers, adminDeleteUser } from "../../services/api/adminApi";
+import { toast } from "../../components/ui/useToast";
 
 const PAGE_SIZE = 10;
 
 export default function AdminUserPage() {
   const accessToken = useSelector((s) => s.auth?.accessToken) ?? null;
+  const me = useSelector((s) => s.auth?.user) ?? null;
 
   const [form, setForm] = useState({ name: "", phoneSuffix: "", role: "" });
   const [rows, setRows] = useState([]);
@@ -14,6 +16,7 @@ export default function AdminUserPage() {
   const [err, setErr] = useState(null);
 
   const [page, setPage] = useState(1);
+  const [delLoadingId, setDelLoadingId] = useState(null);
   const acRef = useRef(null);
 
   const load = async (q = form) => {
@@ -40,6 +43,7 @@ export default function AdminUserPage() {
     } catch (e) {
       if (e.name !== "CanceledError" && e.name !== "AbortError") {
         setErr(e.message || "검색 중 오류가 발생했습니다.");
+        toast.warning(e.message || "검색 중 오류가 발생했습니다.");
       }
     } finally {
       setLoading(false);
@@ -56,14 +60,54 @@ export default function AdminUserPage() {
     const { name, value } = e.target;
     setForm((s) => ({ ...s, [name]: value }));
   };
+
   const handleSubmit = (e) => {
     e.preventDefault();
     load(form);
   };
+
   const handleReset = () => {
     const empty = { name: "", phoneSuffix: "", role: "" };
     setForm(empty);
     load(empty);
+  };
+
+  // 보호 대상: 본인 계정 또는 ADMIN/SUPPORT
+  const isProtectedUser = (u) => {
+    const roles = Array.isArray(u?.roles) ? u.roles : [];
+    const elevated =
+      roles.includes("ROLE_ADMIN") || roles.includes("ROLE_SUPPORT");
+    const isMe = me?.id && u?.id && Number(me.id) === Number(u.id);
+    return elevated || isMe;
+  };
+
+  const handleDelete = async (u) => {
+    if (!u?.id) return;
+    if (isProtectedUser(u)) return;
+
+    const name = u?.name || "";
+    const email = u?.email || "";
+    const ok = window.confirm(
+      `정말 강제 탈퇴하시겠습니까?\n\n대상: ${name}${
+        email ? ` (${email})` : ""
+      }\n이 작업은 되돌릴 수 없습니다.`
+    );
+    if (!ok) return;
+
+    try {
+      setDelLoadingId(u.id);
+      const { message } = await adminDeleteUser(u.id, {
+        token: accessToken || undefined,
+      });
+      // 성공 시 재조회(목록/페이지 갱신 안정적)
+      await load(form);
+      console.log("message:", message);
+      toast.success(message || "탈퇴 처리되었습니다.");
+    } catch (e) {
+      console.error(e?.message || "강제 탈퇴 요청에 실패했습니다.");
+    } finally {
+      setDelLoadingId(null);
+    }
   };
 
   const RoleBadge = ({ role }) => (
@@ -217,9 +261,10 @@ export default function AdminUserPage() {
                     <th className="text-left px-3 py-2">ID</th>
                     <th className="text-left px-3 py-2">사용자</th>
                     <th className="text-left px-3 py-2">이메일</th>
-                    <th className="text-left px-3 py-2">전화</th>
+                    <th className="text-left px-3 py-2">전화번호</th>
                     <th className="text-left px-3 py-2">권한</th>
                     <th className="text-left px-3 py-2">소셜</th>
+                    <th className="text-left px-3 py-2">관리</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -254,6 +299,22 @@ export default function AdminUserPage() {
                           <span className="text-gray-600 bg-gray-50 border border-gray-200 text-[10px] px-1.5 py-0.5 rounded">
                             일반
                           </span>
+                        )}
+                      </td>
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        {isProtectedUser(u) ? (
+                          <span className="text-[10px] text-gray-400">
+                            보호됨
+                          </span>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(u)}
+                            disabled={delLoadingId === u.id || loading}
+                            className="px-1 text-[11px] rounded border text-red-700 border-red-300 hover:bg-red-50 disabled:opacity-50 cursor-pointer"
+                          >
+                            {delLoadingId === u.id ? "처리 중..." : "강제 탈퇴"}
+                          </button>
                         )}
                       </td>
                     </tr>
