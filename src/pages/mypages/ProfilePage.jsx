@@ -68,9 +68,8 @@ export default function ProfilePage() {
         await api.post("/api/auth/logout");
       } catch {}
 
-      // 3) 하드 리다이렉트(앱 부트스트랩 재실행 보장)
-      window.location.replace("/");
-      toast.success("계정이 삭제(탈퇴) 처리되었습니다.");
+      navigate("/", { replace: true });
+      toast.success("로그아웃 되었습니다.");
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
