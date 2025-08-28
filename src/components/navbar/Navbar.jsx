@@ -26,13 +26,13 @@ export default function Navbar() {
 
     try {
       await dispatch(logout()).unwrap();
-      toast.success("로그아웃 되었습니다.");
     } catch (err) {
       console.error("logout failed:", err);
       toast.error("로그아웃에 실패했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setOpen(false);
       navigate("/", { replace: true });
+      toast.success("로그아웃 되었습니다.");
     }
   };
 
