@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createLectureWithVideo } from "../../services/api/courseApi";
+import { toast } from "../../components/ui/useToast";
 
 export default function LectureCreateModal({
   open,
@@ -85,10 +86,12 @@ export default function LectureCreateModal({
           onProgress: setProgress,
         }
       );
+      toast.success("강의 영상이 정상적으로 등록되었습니다.");
       onClose?.();
       onCreated?.(); // 부모에서 목록 새로고침
     } catch (e) {
       setError(e?.message || "강의 영상 등록에 실패했습니다.");
+      toast.error(e?.message || "강의 영상 등록에 실패했습니다.");
     } finally {
       setCreating(false);
     }

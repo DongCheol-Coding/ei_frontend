@@ -1,6 +1,7 @@
 // src/components/admin/CourseCreateModal.jsx
 import { useEffect, useRef, useState } from "react";
 import { createCourse } from "../../services/api/courseApi";
+import { toast } from "../../components/ui/useToast";
 
 const krw = (n) => new Intl.NumberFormat("ko-KR").format(Number(n ?? 0));
 
@@ -88,10 +89,12 @@ export default function CourseCreateModal({
           onProgress: setProgress,
         }
       );
+      toast.success("코스가 정상적으로 등록되었습니다.");
       onClose?.();
       onCreated?.(); // 부모에서 목록 새로고침
     } catch (e) {
       setError(e?.message || "코스 등록에 실패했습니다.");
+      toast.error(e?.message || "코스 등록에 실패했습니다.");
     } finally {
       setCreating(false);
     }
