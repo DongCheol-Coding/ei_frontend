@@ -70,6 +70,7 @@ export default function ProfilePage() {
 
       // 3) 하드 리다이렉트(앱 부트스트랩 재실행 보장)
       window.location.replace("/");
+      toast.success("계정이 삭제(탈퇴) 처리되었습니다.");
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
@@ -78,7 +79,6 @@ export default function ProfilePage() {
       toast.error(msg);
     } finally {
       setDelLoading(false);
-      toast.success("계정이 삭제(탈퇴) 처리되었습니다.");
     }
   };
 
