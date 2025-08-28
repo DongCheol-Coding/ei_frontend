@@ -21,12 +21,15 @@ export default function Navbar() {
 
   const handleLogout = async (e) => {
     e?.preventDefault?.();
+    const ok = window.confirm("로그아웃하시겠습니까?");
+    if (!ok) return;
+
     try {
       await dispatch(logout()).unwrap();
-      alert("로그아웃이 완료되었습니다.");
+      toast.success("로그아웃 되었습니다.");
     } catch (err) {
       console.error("logout failed:", err);
-      alert("로그아웃에 실패했습니다. 잠시 후 다시 시도해 주세요.");
+      toast.error("로그아웃에 실패했습니다. 잠시 후 다시 시도해 주세요.");
     } finally {
       setOpen(false);
       navigate("/", { replace: true });

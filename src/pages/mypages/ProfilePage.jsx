@@ -66,12 +66,11 @@ export default function ProfilePage() {
       // 2) 서버 로그아웃(쿠키 만료; 실패해도 진행)
       try {
         await api.post("/api/auth/logout");
-        toast.success("계정이 삭제(탈퇴) 처리되었습니다.");
       } catch {}
 
       // 3) 하드 리다이렉트(앱 부트스트랩 재실행 보장)
       window.location.replace("/");
-      // 또는: window.location.href = "/";
+      toast.success("계정이 삭제(탈퇴) 처리되었습니다.");
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
