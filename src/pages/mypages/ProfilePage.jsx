@@ -62,20 +62,22 @@ export default function ProfilePage() {
 
       // 1) 계정 삭제
       await deleteAccount();
+      alert("계정이 정상적으로 삭제(탈퇴) 처리되었습니다.");
 
       // 2) 서버 로그아웃(쿠키 만료; 실패해도 진행)
       try {
         await api.post("/api/auth/logout");
       } catch {}
 
-      navigate("/", { replace: true });
-      toast.success("로그아웃 되었습니다.");
+      // 3) 하드 리다이렉트(앱 부트스트랩 재실행 보장)
+      window.location.replace("/");
+      // 또는: window.location.href = "/";
     } catch (err) {
       const msg =
         err?.response?.data?.message ||
         err?.message ||
         "회원 탈퇴에 실패했습니다.";
-      toast.error(msg);
+      alert(msg);
     } finally {
       setDelLoading(false);
     }
