@@ -1,10 +1,9 @@
 import { useState } from "react";
-import { useOutletContext, useNavigate } from "react-router-dom";
+import { useOutletContext } from "react-router-dom";
 import { changePassword, deleteAccount } from "../../services/api/myPageApi";
 import { toast } from "../../components/ui/useToast";
 
 export default function ProfilePage() {
-  const navigate = useNavigate();
   const { user } = useOutletContext();
 
   const [pw, setPw] = useState("");
@@ -77,7 +76,7 @@ export default function ProfilePage() {
         err?.response?.data?.message ||
         err?.message ||
         "회원 탈퇴에 실패했습니다.";
-      alert(msg);
+      toast.error(msg);
     } finally {
       setDelLoading(false);
     }
