@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { createLectureWithVideo } from "../../services/api/courseApi";
-import { toast } from "../../components/ui/useToast";
+import { toast } from "../ui/useToast";
 
 export default function LectureCreateModal({
   open,
