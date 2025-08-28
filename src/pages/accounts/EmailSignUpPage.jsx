@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import TermsModal from "../../components/account/TermsModal";
 import { signup } from "../../services/api/userApi";
+import { toast } from "../../components/ui/useToast";
 
 export default function EmailSignUpPage() {
   const [email, setEmail] = useState("");
@@ -25,15 +26,15 @@ export default function EmailSignUpPage() {
 
     // 최소 검증 (필요 없는 경우 과감히 지워도 됩니다)
     if (!termsService || !termsPrivacy) {
-      alert("필수 약관에 동의해 주세요.");
+      toast.warning("필수 약관에 동의해 주세요.");
       return;
     }
     if (!email || !password || !passwordConfirm || !name || !phone) {
-      alert("모든 필드를 입력해 주세요.");
+      toast.warning("모든 필드를 입력해 주세요.");
       return;
     }
     if (password !== passwordConfirm) {
-      alert("비밀번호가 일치하지 않습니다.");
+      toast.warning("비밀번호가 일치하지 않습니다.");
       return;
     }
 
@@ -47,11 +48,13 @@ export default function EmailSignUpPage() {
         name,
         phone,
       });
-      alert(msg); // "인증 메일이 전송되었습니다."
+      toast.success(msg || "인증 메일이 전송되었습니다.");
       navigate("/account/loginchoice", { replace: true });
     } catch (err) {
       console.error("회원 가입 실패:", err);
-      alert(err.message);
+      toast.error(
+        err?.message || "회원 가입에 실패했습니다. 다시 시도해 주세요."
+      );
     } finally {
       setIsSubmitting(false);
     }

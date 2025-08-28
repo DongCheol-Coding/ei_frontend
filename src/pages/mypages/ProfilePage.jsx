@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { changePassword, deleteAccount } from "../../services/api/myPageApi";
+import { toast } from "../../components/ui/useToast";
 
 export default function ProfilePage() {
   const navigate = useNavigate();
@@ -17,23 +18,23 @@ export default function ProfilePage() {
     e.preventDefault();
 
     if (isSocialLogin) {
-      alert("소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.");
+      toast.warning("소셜 로그인 계정은 비밀번호를 변경할 수 없습니다.");
       return;
     }
 
     if (pw.length < 8) {
-      alert("새 비밀번호는 8자 이상이어야 합니다.");
+      toast.warning("새 비밀번호는 8자 이상이어야 합니다.");
       return;
     }
     if (pw !== pw2) {
-      alert("비밀번호가 일치하지 않습니다.");
+      toast.error("비밀번호가 일치하지 않습니다.");
       return;
     }
 
     try {
       setLoading(true);
       await changePassword(pw);
-      alert("비밀번호가 변경되었습니다.");
+      toast.success("비밀번호가 변경되었습니다.");
       setPw("");
       setPw2("");
     } catch (err) {
@@ -41,7 +42,7 @@ export default function ProfilePage() {
         err?.response?.data?.message ||
         err?.message ||
         "비밀번호 변경에 실패했습니다.";
-      alert(msg);
+      toast.error(msg);
     } finally {
       setLoading(false);
     }
@@ -61,11 +62,11 @@ export default function ProfilePage() {
 
       // 1) 계정 삭제
       await deleteAccount();
-      alert("계정이 삭제(탈퇴) 처리되었습니다.");
 
       // 2) 서버 로그아웃(쿠키 만료; 실패해도 진행)
       try {
         await api.post("/api/auth/logout");
+        toast.success("계정이 삭제(탈퇴) 처리되었습니다.");
       } catch {}
 
       // 3) 하드 리다이렉트(앱 부트스트랩 재실행 보장)
@@ -76,7 +77,7 @@ export default function ProfilePage() {
         err?.response?.data?.message ||
         err?.message ||
         "회원 탈퇴에 실패했습니다.";
-      alert(msg);
+      toast.error(msg);
     } finally {
       setDelLoading(false);
     }

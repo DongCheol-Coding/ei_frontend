@@ -64,7 +64,7 @@ export default function EmailAuthPage() {
 
         doneRef.current = true;
         setProgress(100);
-        setStatus("카카오 로그인 성공! 이동합니다...");
+        setStatus("로그인 성공! 이동합니다...");
 
         const next = sessionStorage.getItem("returnTo");
         sessionStorage.removeItem("returnTo");
@@ -74,6 +74,7 @@ export default function EmailAuthPage() {
             replace: true,
           });
         }, 500);
+        toast.success("성공적으로 로그인 되었습니다.");
       } catch (e) {
         doneRef.current = true;
         setError("인증에 실패했습니다. 다시 로그인해 주세요.");

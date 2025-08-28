@@ -3,6 +3,7 @@ import { RouterProvider } from "react-router-dom";
 import { useDispatch } from "react-redux";
 import { fetchMe } from "./services/auth/authSlice";
 import root from "./routes";
+import "./components/ui/useToast";
 
 function App() {
   const dispatch = useDispatch();

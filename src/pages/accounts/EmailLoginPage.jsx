@@ -6,6 +6,7 @@ import {
   selectIsAuth,
   selectHydrated,
 } from "../../services/auth/authSlice";
+import { toast } from "../../components/ui/useToast";
 
 export default function EmailLoginPage() {
   const [email, setEmail] = useState("");
@@ -31,14 +32,14 @@ export default function EmailLoginPage() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!email || !password) {
-      alert("모든 필드를 입력해 주세요.");
+      toast.warning("모든 필드를 입력해 주세요.");
       return;
     }
-    if (isSubmitting || status === "loading") return;
+    if (isSubmitting) return;
     setIsSubmitting(true);
 
     try {
-      const user = await dispatch(loginThunk({ email, password })).unwrap();
+      await dispatch(loginThunk({ email, password })).unwrap();
 
       const next = sessionStorage.getItem("returnTo");
       sessionStorage.removeItem("returnTo");
@@ -46,16 +47,16 @@ export default function EmailLoginPage() {
       navigate(next && next.startsWith("/mypage") ? next : "/mypage", {
         replace: true,
       });
+      toast.success("성공적으로 로그인 되었습니다.");
     } catch (err) {
       console.error("로그인 실패:", err);
-      alert(err);
+      toast.error(err || "로그인에 실패했습니다. 다시 시도해 주세요.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // 버튼 비활성 조건: 제출 중이거나 리덕스 로딩
-  const isBusy = isSubmitting || status === "loading";
+  const isBusy = isSubmitting;
 
   return (
     <div className="bg-white border border-gray-200 shadow-sm p-5 w-full max-w-[400px]">

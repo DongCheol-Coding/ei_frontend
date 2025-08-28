@@ -4,6 +4,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../../services/api/basicApi";
 import { setUser, setHydrated } from "../../services/auth/authSlice";
+import { toast } from "../../components/ui/useToast";
 
 export default function KakaoAuthPage() {
   const dispatch = useDispatch();
@@ -51,7 +52,9 @@ export default function KakaoAuthPage() {
             replace: true,
           });
         }, 500);
+        toast.success("성공적으로 로그인 되었습니다.");
       } catch (e) {
+        console.log("로그인 실패 : ", e);
         doneRef.current = true;
         setError("인증에 실패했습니다. 다시 로그인해 주세요.");
         setStatus("카카오 로그인 실패");
@@ -61,7 +64,7 @@ export default function KakaoAuthPage() {
         setTimeout(() => {
           const qs = new URLSearchParams(location.search);
           qs.set("error", "auth_failed");
-          navigate(`/account/login?}`, { replace: true });
+          navigate(`/account/login}`, { replace: true });
         }, 1200);
       }
     })();

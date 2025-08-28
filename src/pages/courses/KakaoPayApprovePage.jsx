@@ -24,6 +24,7 @@ export default function KakaoPayApprovePage() {
         setMsg(message || "결제가 완료되었습니다.");
 
         navigate("/mypage/ingcourse", { replace: true });
+        toast.success("결제가 정상처리 되었습니다.");
       } catch (e) {
         setMsg(e.message ?? "결제 승인에 실패했습니다.");
       } finally {
