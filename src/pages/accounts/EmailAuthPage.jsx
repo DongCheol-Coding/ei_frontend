@@ -3,6 +3,7 @@ import { useDispatch } from "react-redux";
 import { useNavigate, useLocation } from "react-router-dom";
 import { api } from "../../services/api/basicApi";
 import { setUser, setHydrated } from "../../services/auth/authSlice";
+import { toast } from "../../components/ui/useToast";
 
 function extractAccessToken(loc) {
   const qs = new URLSearchParams(loc.search || "");

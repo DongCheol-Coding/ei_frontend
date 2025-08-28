@@ -4,6 +4,7 @@ import { useSelector, useDispatch } from "react-redux";
 import { logout } from "../../services/auth/authSlice";
 import { Menu, X } from "lucide-react";
 import dc_logo from "../../assets/cd_logo.png";
+import { toast } from "../../components/ui/useToast";
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
