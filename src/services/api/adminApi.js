@@ -28,7 +28,8 @@ export async function searchUsers(query = {}, opts = {}) {
       name: u?.name ?? "",
       phone: u?.phone ?? "",
       roles: Array.isArray(u?.roles) ? u.roles : [],
-      social: Boolean(u?.social),
+       social: Boolean(u?.isSocial ?? u?.social),
+  isDeleted: Boolean(u?.isDeleted),   
       imageUrl: u?.imageUrl ?? null,
     }));
   } catch (err) {

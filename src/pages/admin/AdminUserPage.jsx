@@ -301,8 +301,16 @@ export default function AdminUserPage() {
                           </span>
                         )}
                       </td>
+
+                      {/* [수정됨] 관리(강제 탈퇴) 칼럼: 
+          - u.isDeleted === true → '탈퇴회원' 뱃지
+          - 그 외: 보호대상이면 '보호됨', 아니면 '강제 탈퇴' 버튼 */}
                       <td className="px-3 py-2 whitespace-nowrap">
-                        {isProtectedUser(u) ? (
+                        {u.isDeleted ? (
+                          <span className="text-[10px] text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded">
+                            탈퇴회원
+                          </span>
+                        ) : isProtectedUser(u) ? (
                           <span className="text-[10px] text-gray-400">
                             보호됨
                           </span>
