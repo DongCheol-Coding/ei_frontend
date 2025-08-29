@@ -311,7 +311,7 @@ export default function AdminUserPage() {
                             탈퇴회원
                           </span>
                         ) : isProtectedUser(u) ? (
-                          <span className="text-[10px] text-gray-400">
+                          <span className="text-[10px] text-gray-500 bg-gray-50 border border-gray-200 px-1.5 py-0.5 rounded">
                             보호됨
                           </span>
                         ) : (
