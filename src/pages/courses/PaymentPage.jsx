@@ -1,7 +1,7 @@
 import { useMemo, useState, useEffect } from "react";
 import { useSearchParams } from "react-router-dom";
 import kakaopayIcon from "../../assets/payment_icon_yellow_small.png";
-import naverpayIcon from "../../assets/payment_icon_yellow_small.png";
+import naverpayIcon from "../../assets/naver_pay_icon.svg";
 import tosspayIcon from "../../assets/tosspay_icon.svg";
 import { readyKakaoPay } from "../../services/api/kakaoPayApi";
 import { getCoursePreview } from "../../services/api/courseApi";
