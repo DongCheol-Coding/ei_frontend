@@ -1,9 +1,6 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { login as loginApi } from "../api/userApi";
 import { api } from "../api/basicApi";
-import { tokenStorage } from "../../lib/tokenStorage";
-
-const initialToken = tokenStorage.get();
 
 export const fetchMe = createAsyncThunk(
   "auth/fetchMe",
