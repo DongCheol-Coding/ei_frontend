@@ -1,15 +1,8 @@
-// src/pages/MyPageLandingPage.jsx
-/*
-[수정됨]
-- 진행률 계산을 progressPercent(신규 스키마) 기반으로 변경(0~100 clamp, 소수 1자리 표시)
-- navigate 시 totalLectures, completedLectures를 state로 전달
-- Fragment에 key 부여로 React key 경고 방지
-*/
-
 import { Fragment, useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useOutletContext, useNavigate } from "react-router-dom";
 import { getMyCourses } from "../../services/api/myPageApi";
+import { getCourseAttendanceDates } from "../../services/api/courseApi";
 import WeeksPreview from "../../components/mypage/WeeksPreview";
 
 const FALLBACK_IMG = "https://placehold.co/300x200";
@@ -25,6 +18,9 @@ export default function MyPageLandingPage() {
   const acRef = useRef(null);
 
   const [selected, setSelected] = useState("");
+
+  const [attendanceDates, setAttendanceDates] = useState([]);
+  const attendanceAcRef = useRef(null);
 
   useEffect(() => {
     acRef.current?.abort?.();
@@ -118,6 +114,29 @@ export default function MyPageLandingPage() {
     return viewRows.filter((c) => Number(c?.courseId) === id);
   }, [selected, viewRows]);
 
+  useEffect(() => {
+    const cid = Number(selected);
+    if (!Number.isFinite(cid)) {
+      setAttendanceDates([]);
+      return;
+    }
+
+    attendanceAcRef.current?.abort?.();
+    const ac = new AbortController();
+    attendanceAcRef.current = ac;
+
+    setAttendanceDates([]);
+
+    getCourseAttendanceDates(cid, { signal: ac.signal })
+      .then((res) => {
+        const dates = Array.isArray(res?.attendance) ? res.attendance : [];
+        setAttendanceDates(dates);
+      })
+      .catch(() => setAttendanceDates([]));
+
+    return () => ac.abort();
+  }, [selected]);
+
   return (
     <div className="mx-auto max-w-5xl space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
@@ -182,7 +201,10 @@ export default function MyPageLandingPage() {
                 <div className="text-xs text-gray-500">
                   결제일: {payDate ? payDate : "결제 이력 없음"}
                 </div>
-                <WeeksPreview paymentDateStr={payDate} />
+                <WeeksPreview
+                  paymentDateStr={payDate}
+                  highlightDates={attendanceDates}
+                />
               </div>
 
               {/* 코스 카드 */}

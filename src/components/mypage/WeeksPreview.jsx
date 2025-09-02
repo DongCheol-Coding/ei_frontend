@@ -1,12 +1,3 @@
-// src/components/WeeksPreview.jsx
-/*
-[변경 요약]
-- 총 56일(8×7) 고정 범위를 payDate 포함으로 생성: [payDate, payDate+55]
-- 위 범위를 월~일(월요일 시작) 주차로 분할하되, 범위 밖 날짜는 미생성
-  → 예) 결제일이 일요일이면 1주차=1개, 마지막 주차=6개, 합계 정확히 56개
-- '다음(>)'은 트랙 끝에서 자동 비활성화(스크롤 끝 판정 기반)
-*/
-
 import React, {
   useMemo,
   useRef,
@@ -43,10 +34,30 @@ const startOfWeekMon = (d) => {
   return x;
 };
 
+// YYYY-MM-DD로 정규화
+const toYMD = (d) => {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, "0");
+  const day = String(d.getDate()).padStart(2, "0");
+  return `${y}-${m}-${day}`;
+};
+// 문자열 → YYYY-MM-DD 정규화("2025-09-02", "2025-09-02T..." 모두 수용)
+const normalizeToYMD = (s) => {
+  if (typeof s !== "string") return null;
+  const m = s.match(/^(\d{4}-\d{2}-\d{2})/);
+  if (m) return m[1];
+  const t = Date.parse(s);
+  if (Number.isFinite(t)) return toYMD(new Date(t));
+  return null;
+};
+
 // --- 컴포넌트 ---
 export default function WeeksPreview({
   paymentDateStr,
+  // 아래 세 개 중 아무 이름으로 내려줘도 됨
+  highlightDates = [],
   attendedDates = [],
+  attendanceDates = [],
   totalWeeks = 8, // 총 주차(개수) → 총일수 = totalWeeks*7
 }) {
   if (!paymentDateStr) return null;
@@ -60,20 +71,22 @@ export default function WeeksPreview({
   const rangeStart = payDate;
   const rangeEnd = addDays(payDate, TOTAL_DAYS - 1);
 
-  const attendedSet = useMemo(
-    () =>
-      new Set((Array.isArray(attendedDates) ? attendedDates : []).map(String)),
-    [attendedDates]
-  );
-  const toKey = (d) =>
-    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(
-      d.getDate()
-    ).padStart(2, "0")}`;
+  // 출석일: 모든 입력 배열 병합 → YYYY-MM-DD 정규화 → Set
+  const attendedSet = useMemo(() => {
+    const all = []
+      .concat(Array.isArray(highlightDates) ? highlightDates : [])
+      .concat(Array.isArray(attendedDates) ? attendedDates : [])
+      .concat(Array.isArray(attendanceDates) ? attendanceDates : [])
+      .map(normalizeToYMD)
+      .filter(Boolean);
+    return new Set(all);
+  }, [highlightDates, attendedDates, attendanceDates]);
 
-  // 분할 기준: 결제일이 속한 "그 주의 월요일"
+  const toKey = (d) => toYMD(d);
+
+  // 결제일이 속한 "그 주의 월요일"부터 주차 분할
   const week1Mon = startOfWeekMon(rangeStart);
 
-  // [payDate ~ payDate+55] 범위를 월~일 주차로 분할(범위 밖은 미생성)
   const weeks = useMemo(() => {
     const out = [];
     let start = new Date(week1Mon);
@@ -161,8 +174,8 @@ export default function WeeksPreview({
     const base =
       "relative grid place-items-center rounded-full select-none text-[13px] font-semibold w-8 h-8 transition-transform";
     const colors = isAttended
-      ? "bg-blue-500 text-white"
-      : "bg-gray-300 text-gray-700";
+      ? "bg-indigo-700 text-white border border-indigo-700"
+      : "bg-white text-gray-700 border border-gray-300";
     const fx = isToday
       ? "scale-110 ring-2 ring-rose-400 ring-offset-2 ring-offset-gray-100"
       : "";
@@ -214,7 +227,7 @@ export default function WeeksPreview({
               <div className="text-[11px] text-gray-400 mb-2">{wk.label}</div>
               <div className="h-12 flex items-center gap-2 bg-gray-100 px-3 rounded-xl">
                 {wk.days.map((d) => (
-                  <DayDot key={d.toISOString()} d={d} />
+                  <DayDot key={toKey(d)} d={d} />
                 ))}
               </div>
             </div>

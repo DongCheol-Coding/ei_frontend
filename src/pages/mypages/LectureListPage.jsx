@@ -4,6 +4,7 @@ import { useSelector } from "react-redux";
 import {
   getCourseLectures,
   getLectureDetail,
+  startLecturePlayback,
 } from "../../services/api/courseApi";
 import { updateLectureProgress } from "../../services/api/myPageApi";
 
@@ -143,61 +144,63 @@ export default function LectureListPage() {
       .length;
   }, [parentCompletedLectures, viewRows]);
 
-const postProgress = useCallback(
-  async (sec) => {
-    if (!Number.isInteger(sec) || sec < 0) return;
-    if (!selectedId) return;
+  const postProgress = useCallback(
+    async (sec) => {
+      if (!Number.isInteger(sec) || sec < 0) return;
+      if (!selectedId) return;
 
-    progressAcRef.current?.abort?.();
-    const ac = new AbortController();
-    progressAcRef.current = ac;
+      progressAcRef.current?.abort?.();
+      const ac = new AbortController();
+      progressAcRef.current = ac;
 
-    try {
-      const res = await updateLectureProgress({
-        lectureId: selectedId,
-        watchedSec: sec,
-        accessToken,
-        signal: ac.signal,
-      });
+      try {
+        const res = await updateLectureProgress({
+          lectureId: selectedId,
+          watchedSec: sec,
+          accessToken,
+          signal: ac.signal,
+        });
 
-      // 응답 안전 파싱: res?.data?.data 형태 또는 res?.data 형태 모두 수용
-      const payload = res?.data ?? res ?? null;
-      const d = payload?.data ?? payload ?? null;
+        // 응답 안전 파싱: res?.data?.data 형태 또는 res?.data 형태 모두 수용
+        const payload = res?.data ?? res ?? null;
+        const d = payload?.data ?? payload ?? null;
 
-      // 응답에서 갱신 대상/값 추출 (없으면 selectedId와 기존값 사용)
-      const lectureIdFromApi =
-        (d && Number.isFinite(Number(d.lectureId)) && Number(d.lectureId)) ||
-        selectedId;
+        // 응답에서 갱신 대상/값 추출 (없으면 selectedId와 기존값 사용)
+        const lectureIdFromApi =
+          (d && Number.isFinite(Number(d.lectureId)) && Number(d.lectureId)) ||
+          selectedId;
 
-      const nextProgress =
-        d && Number.isFinite(Number(d.lectureProgress))
-          ? Number(d.lectureProgress) // 0~1
-          : null;
+        const nextProgress =
+          d && Number.isFinite(Number(d.lectureProgress))
+            ? Number(d.lectureProgress) // 0~1
+            : null;
 
-      const nextCompleted =
-        d && typeof d.lectureCompleted === "boolean"
-          ? d.lectureCompleted
-          : null;
+        const nextCompleted =
+          d && typeof d.lectureCompleted === "boolean"
+            ? d.lectureCompleted
+            : null;
 
-      // rows 즉시 반영 -> __percent는 viewRows(useMemo)에서 자동 재계산됨
-      if (lectureIdFromApi) {
-        setRows((prev) =>
-          (Array.isArray(prev) ? prev : []).map((l) => {
-            if (l.id !== lectureIdFromApi) return l;
-            return {
-              ...l,
-              ...(nextProgress !== null ? { progress: nextProgress } : null),
-              ...(nextCompleted !== null ? { completed: nextCompleted } : null),
-            };
-          })
-        );
+        // rows 즉시 반영 -> __percent는 viewRows(useMemo)에서 자동 재계산됨
+        if (lectureIdFromApi) {
+          setRows((prev) =>
+            (Array.isArray(prev) ? prev : []).map((l) => {
+              if (l.id !== lectureIdFromApi) return l;
+              return {
+                ...l,
+                ...(nextProgress !== null ? { progress: nextProgress } : null),
+                ...(nextCompleted !== null
+                  ? { completed: nextCompleted }
+                  : null),
+              };
+            })
+          );
+        }
+      } catch {
+        // 무음; 필요 시 토스트로 교체 가능
       }
-    } catch {
-      // 무음; 필요 시 토스트로 교체 가능
-    }
-  },
-  [selectedId, accessToken]
-);
+    },
+    [selectedId, accessToken]
+  );
 
   const flushProgressOnExit = useCallback(
     (sec) => {
@@ -358,6 +361,14 @@ const postProgress = useCallback(
     navigate(-1);
   }, [selectedId, navigate, flushProgressOnExit]);
 
+const handleSelectLecture = useCallback(
+  (lectureId) => {
+    setSelectedId(lectureId); // UI 먼저
+    startLecturePlayback(lectureId).catch(() => {}); // 토큰 없이도 호출
+  },
+  []
+);
+
   return (
     <div className="w-screen min-h-screen bg-white">
       <div className="p-2">
@@ -485,7 +496,7 @@ const postProgress = useCallback(
                                 ? "border-rose-500 text-rose-600"
                                 : "",
                             ].join(" ")}
-                            onClick={() => setSelectedId(l.id)}
+                            onClick={() => handleSelectLecture(l.id)}
                           >
                             영상 보기
                           </button>

@@ -1,11 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { useDispatch, useSelector } from "react-redux";
-import {
-  loginThunk,
-  selectIsAuth,
-  selectHydrated,
-} from "../../services/auth/authSlice";
+import { loginThunk, selectIsAuth } from "../../services/auth/authSlice";
 import { toast } from "../../components/ui/useToast";
 
 export default function EmailLoginPage() {
@@ -13,7 +9,6 @@ export default function EmailLoginPage() {
   const [password, setPassword] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isAuth = useSelector(selectIsAuth);
-  const hydrated = useSelector(selectHydrated);
   const dispatch = useDispatch();
   const navigate = useNavigate();
 

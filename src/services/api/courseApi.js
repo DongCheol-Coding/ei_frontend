@@ -480,3 +480,103 @@ export async function getCoursePreview(courseId, opts = {}) {
     throw new Error(msg);
   }
 }
+
+/* ============================================================
+ * 08. 강의 재생 시작 기록 (POST /api/lectures/{lectureId}/playback/start)
+ *     - startLecturePlayback(lectureId, opts)
+ *     - 헤더: Authorization: Bearer <token>
+ *     - 반환: { success: true, message: "OK" } (성공 시)
+ * ========================================================== */
+export async function startLecturePlayback(lectureId, opts = {}) {
+  if (
+    lectureId === undefined ||
+    lectureId === null ||
+    String(lectureId).trim() === ""
+  ) {
+    throw new Error("유효한 lectureId가 필요합니다.");
+  }
+
+  const headers = {};
+  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+
+  const lid = encodeURIComponent(String(lectureId).trim());
+  const url = `/api/lectures/${lid}/playback/start`;
+
+  try {
+    // 바디가 필요 없으면 빈 객체 전송
+    const res = await api.post(url, {}, { headers, signal: opts.signal });
+    const body = res?.data ?? {};
+
+    // 서버 예시 응답: { status: 200, success: true, message: "OK" }
+    if (body?.success === true) {
+      return { success: true, message: body?.message ?? "OK" };
+    }
+    // 2xx지만 success가 false로 오는 경우 방어
+    return { success: Boolean(body?.success), message: body?.message ?? "" };
+  } catch (err) {
+    const status = err?.response?.status;
+    let msg =
+      err?.response?.data?.message ||
+      err?.message ||
+      "재생 시작 기록에 실패했습니다.";
+    if (status === 404) msg = "해당 강의를 찾을 수 없습니다.";
+    if (status === 401) msg = "인증이 필요합니다.";
+    if (status === 403) msg = "권한이 없습니다.";
+    throw new Error(msg);
+  }
+}
+
+/* ============================================================
+ * 09. 출석 날짜 조회 (GET /api/courses/{courseId}/attendance/dates)
+ *     - getCourseAttendanceDates(courseId, opts)
+ *     - 헤더: Authorization: Bearer <token>
+ *     - 반환: { userId, courseId, attendance: ["YYYY-MM-DD", ...] }
+ * ========================================================== */
+export async function getCourseAttendanceDates(courseId, opts = {}) {
+  if (
+    courseId === undefined ||
+    courseId === null ||
+    String(courseId).trim() === ""
+  ) {
+    throw new Error("유효한 courseId가 필요합니다.");
+  }
+
+  const headers = {};
+  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
+
+  const toNum = (v, d = 0) => {
+    const n = Number(v);
+    return Number.isFinite(n) ? n : d;
+  };
+
+  const cid = encodeURIComponent(String(courseId).trim());
+  const url = `/api/courses/${cid}/attendance/dates`;
+
+  try {
+    const res = await api.get(url, { headers, signal: opts.signal });
+    // 서버 응답: { status, success, message, data: { userId, courseId, attendance: [...] } }
+    const d = res?.data?.data ?? {};
+
+    const dates = Array.isArray(d?.attendance)
+      ? d.attendance.filter(
+          (s) => typeof s === "string" && /^\d{4}-\d{2}-\d{2}$/.test(s)
+        )
+      : [];
+
+    return {
+      userId: toNum(d?.userId, 0),
+      courseId: toNum(d?.courseId, toNum(courseId)),
+      attendance: dates,
+    };
+  } catch (err) {
+    const status = err?.response?.status;
+    let msg =
+      err?.response?.data?.message ||
+      err?.message ||
+      "출석 정보를 불러오지 못했습니다.";
+    if (status === 404) msg = "해당 코스를 찾을 수 없습니다.";
+    if (status === 401) msg = "인증이 필요합니다.";
+    if (status === 403) msg = "권한이 없습니다.";
+    throw new Error(msg);
+  }
+}
