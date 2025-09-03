@@ -2,16 +2,11 @@ import { api } from "./basicApi";
 
 /* ============================================================
  * 01. 강의 목록 조회 (GET /api/course)
- *     - getCourses(opts)
- *     - 반환: [{ id, title, imageUrl, price, published }, ...]
  * ========================================================== */
 export async function getCourses(opts = {}) {
-  const headers = {};
-  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
 
   try {
     const res = await api.get("/api/course", {
-      headers,
       signal: opts.signal,
     });
 
@@ -37,9 +32,6 @@ export async function getCourses(opts = {}) {
 
 /* ============================================================
  * 02. 강의 생성 (POST /api/course, multipart/form-data)
- *     - createCourse(payload, opts)
- *     - payload: { title, description, price, image }
- *     - 반환: { id, title, description, imageUrl, price, published }
  * ========================================================== */
 export async function createCourse(payload, opts = {}) {
   const { title, description, price, image } = payload ?? {};
@@ -62,13 +54,8 @@ export async function createCourse(payload, opts = {}) {
     fd.append("image", image);
   }
 
-  const headers = {};
-  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
-  // Content-Type은 지정하지 않으면 브라우저가 boundary 포함해 자동 설정합니다.
-
   try {
     const res = await api.post("/api/course", fd, {
-      headers,
       signal: opts.signal,
       onUploadProgress: (evt) => {
         if (typeof opts.onProgress === "function" && evt.total) {
@@ -101,8 +88,6 @@ export async function createCourse(payload, opts = {}) {
 
 /* ============================================================
  * 03. 특정 코스의 강의 목록 조회 (GET /api/courses/{courseId}/lectures)
- *     - getCourseLectures(courseId, opts)
- *     - 반환: [{ id, title, orderIndex, durationSec, progress }, ...]
  * ========================================================== */
 export async function getCourseLectures(courseId, opts = {}) {
   if (
@@ -113,14 +98,11 @@ export async function getCourseLectures(courseId, opts = {}) {
     throw new Error("유효한 courseId가 필요합니다.");
   }
 
-  const headers = {};
-  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
-
   const cid = encodeURIComponent(String(courseId).trim());
   const url = `/api/courses/${cid}/lectures`;
 
   try {
-    const res = await api.get(url, { headers, signal: opts.signal });
+    const res = await api.get(url, { signal: opts.signal });
 
     // 서버 응답: { status, success, message, data: [...] }
     const body = res?.data;
@@ -162,9 +144,6 @@ export async function getCourseLectures(courseId, opts = {}) {
 
 /* ============================================================
  * 04. (ADMIN) 강의+영상 동시 업로드 (POST /api/courses/{courseId}/lectures/with-video)
- *     - createLectureWithVideo(courseId, fields, opts)
- *     - fields: { title*, description, orderIndex, isPublic, video }
- *     - data(JSON)에 durationSec, sizeBytes도 포함해서 전송
  * ========================================================== */
 export async function createLectureWithVideo(courseId, fields = {}, opts = {}) {
   if (
@@ -323,8 +302,6 @@ export async function createLectureWithVideo(courseId, fields = {}, opts = {}) {
 
 /* ============================================================
  * 05. (ADMIN) 강의 삭제 (DELETE /api/lectures/{lectureId})
- *     - deleteLecture(lectureId, opts)
- *     - 반환: true (성공 시)
  * ========================================================== */
 export async function deleteLecture(lectureId, opts = {}) {
   if (
@@ -335,14 +312,11 @@ export async function deleteLecture(lectureId, opts = {}) {
     throw new Error("유효한 lectureId가 필요합니다.");
   }
 
-  const headers = {};
-  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
-
   const lid = encodeURIComponent(String(lectureId).trim());
   const url = `/api/lectures/${lid}`;
 
   try {
-    await api.delete(url, { headers, signal: opts.signal });
+    await api.delete(url, { signal: opts.signal });
     // 응답: ApiResponse<Void>, data=null
     return true;
   } catch (err) {
@@ -363,8 +337,6 @@ export async function deleteLecture(lectureId, opts = {}) {
 
 /* ============================================================
  * 06. 강의 상세 조회 (GET /api/lectures/{lectureId})
- *     - getLectureDetail(lectureId, opts)
- *     - 반환: { id, courseId, title, description, durationSec, videoUrl, progress, orderIndex, isPublic? }
  * ========================================================== */
 export async function getLectureDetail(lectureId, opts = {}) {
   if (
@@ -374,9 +346,6 @@ export async function getLectureDetail(lectureId, opts = {}) {
   ) {
     throw new Error("유효한 lectureId가 필요합니다.");
   }
-
-  const headers = {};
-  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
 
   const lid = encodeURIComponent(String(lectureId).trim());
   const url = `/api/lectures/${lid}`;
@@ -394,7 +363,7 @@ export async function getLectureDetail(lectureId, opts = {}) {
   };
 
   try {
-    const res = await api.get(url, { headers, signal: opts.signal });
+    const res = await api.get(url, { signal: opts.signal });
     // 서버 응답: { status, success, message, data: LectureDetailDto }
     const d = res?.data?.data ?? {};
 
@@ -430,8 +399,6 @@ export async function getLectureDetail(lectureId, opts = {}) {
 
 /* ============================================================
  * 07. 코스 미리보기 (GET /api/course/{courseId}/preview)
- *     - getCoursePreview(courseId, opts)
- *     - 반환: { id, title, description, price, imageUrl, lectureCount, totalDurationSec }
  * ========================================================== */
 export async function getCoursePreview(courseId, opts = {}) {
   if (
@@ -441,9 +408,6 @@ export async function getCoursePreview(courseId, opts = {}) {
   ) {
     throw new Error("유효한 courseId가 필요합니다.");
   }
-
-  const headers = {};
-  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
 
   const toNum = (v, d = 0) => {
     const n = Number(v);
@@ -455,7 +419,7 @@ export async function getCoursePreview(courseId, opts = {}) {
   const url = `/api/course/${cid}/preview`; // ← 단수(course) 엔드포인트
 
   try {
-    const res = await api.get(url, { headers, signal: opts.signal });
+    const res = await api.get(url, { signal: opts.signal });
     // 서버 응답: { status, success, message, data: { ... } }
     const d = res?.data?.data ?? {};
 
@@ -483,9 +447,6 @@ export async function getCoursePreview(courseId, opts = {}) {
 
 /* ============================================================
  * 08. 강의 재생 시작 기록 (POST /api/lectures/{lectureId}/playback/start)
- *     - startLecturePlayback(lectureId, opts)
- *     - 헤더: Authorization: Bearer <token>
- *     - 반환: { success: true, message: "OK" } (성공 시)
  * ========================================================== */
 export async function startLecturePlayback(lectureId, opts = {}) {
   if (
@@ -496,15 +457,12 @@ export async function startLecturePlayback(lectureId, opts = {}) {
     throw new Error("유효한 lectureId가 필요합니다.");
   }
 
-  const headers = {};
-  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
-
   const lid = encodeURIComponent(String(lectureId).trim());
   const url = `/api/lectures/${lid}/playback/start`;
 
   try {
     // 바디가 필요 없으면 빈 객체 전송
-    const res = await api.post(url, {}, { headers, signal: opts.signal });
+    const res = await api.post(url, {}, { signal: opts.signal });
     const body = res?.data ?? {};
 
     // 서버 예시 응답: { status: 200, success: true, message: "OK" }
@@ -528,9 +486,6 @@ export async function startLecturePlayback(lectureId, opts = {}) {
 
 /* ============================================================
  * 09. 출석 날짜 조회 (GET /api/courses/{courseId}/attendance/dates)
- *     - getCourseAttendanceDates(courseId, opts)
- *     - 헤더: Authorization: Bearer <token>
- *     - 반환: { userId, courseId, attendance: ["YYYY-MM-DD", ...] }
  * ========================================================== */
 export async function getCourseAttendanceDates(courseId, opts = {}) {
   if (
@@ -541,9 +496,6 @@ export async function getCourseAttendanceDates(courseId, opts = {}) {
     throw new Error("유효한 courseId가 필요합니다.");
   }
 
-  const headers = {};
-  if (opts.token) headers.Authorization = `Bearer ${opts.token}`;
-
   const toNum = (v, d = 0) => {
     const n = Number(v);
     return Number.isFinite(n) ? n : d;
@@ -553,7 +505,7 @@ export async function getCourseAttendanceDates(courseId, opts = {}) {
   const url = `/api/courses/${cid}/attendance/dates`;
 
   try {
-    const res = await api.get(url, { headers, signal: opts.signal });
+    const res = await api.get(url, { signal: opts.signal });
     // 서버 응답: { status, success, message, data: { userId, courseId, attendance: [...] } }
     const d = res?.data?.data ?? {};
 
