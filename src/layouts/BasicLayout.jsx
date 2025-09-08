@@ -1,10 +1,23 @@
 // src/layouts/BasicLayout.jsx
 import { Outlet } from "react-router-dom";
+import { useSelector } from "react-redux";
 import Navbar from "../components/navbar/Navbar";
 import TopBar from "../components/navbar/Topbar";
 import Footer from "../components/navbar/Footer";
+import FloatingChatWidget from "../components/chat/FloatingChatWidget";
+import { selectIsAuth, selectHydrated } from "../services/auth/authSlice";
 
 export default function BasicLayout() {
+  const isAuth = useSelector(selectIsAuth);
+  const hydrated = useSelector(selectHydrated);
+
+  const roles = useSelector((s) =>
+    Array.isArray(s.auth?.user?.roles) ? s.auth.user.roles : []
+  );
+
+  const isPrivileged =
+    roles.includes("ROLE_ADMIN") || roles.includes("ROLE_SUPPORT");
+
   return (
     <div className="min-h-screen flex flex-col">
       <TopBar />
@@ -15,6 +28,8 @@ export default function BasicLayout() {
         <Outlet />
       </main>
       <Footer className="mt-auto" />
+      
+      {hydrated && isAuth && !isPrivileged && <FloatingChatWidget />}
     </div>
   );
 }

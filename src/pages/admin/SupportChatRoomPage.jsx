@@ -1,0 +1,170 @@
+import { useEffect, useMemo, useRef, useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+import { useStompChat } from "../../lib/useStompChat";
+import { useSelector } from "react-redux";
+
+export default function SupportChatRoomPage() {
+  const navigate = useNavigate();
+  const { roomId: roomIdParam } = useParams();
+  const roomId = Number(roomIdParam);
+
+  // 수정됨: 현재 로그인 사용자 식별(id/email)
+  const meId = useSelector((s) => s.auth?.user?.id);
+  const meEmail = useSelector((s) => s.auth?.user?.email);
+
+  const { connected, inbox, loading, send, error } = useStompChat(roomId);
+
+  const [text, setText] = useState("");
+  const listRef = useRef(null);
+
+  // 메시지 렌더용: 날짜/보낸이 정보 정규화(+ isMine)
+  const messages = useMemo(() => {
+    return (inbox ?? []).map((m) => {
+      const senderId = m.senderUserId ?? m.senderId ?? null;
+      const senderEmail = m.senderEmail ?? null;
+      const isMine =
+        (meId != null && String(senderId) === String(meId)) ||
+        (meEmail &&
+          senderEmail &&
+          String(senderEmail).toLowerCase() === String(meEmail).toLowerCase());
+
+      return {
+        id: m.id ?? `${m.sentAt ?? ""}-${Math.random()}`,
+        message: m.message ?? "",
+        time: (m.sentAt ?? m.createdAt ?? "").toString(),
+        isMine,
+      };
+    });
+  }, [inbox, meId, meEmail]);
+
+  // 하단 자동 스크롤
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollTop = el.scrollHeight;
+  }, [messages.length]);
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const t = text.trim();
+    if (!t) return;
+    send(t);
+    setText("");
+  };
+
+  // 로딩/에러/빈방 처리
+  if (Number.isNaN(roomId)) {
+    return (
+      <div className="p-4">
+        <div className="text-sm text-red-600">잘못된 방 번호입니다.</div>
+        <button
+          className="mt-3 px-3 py-1 border rounded"
+          onClick={() => navigate(-1)}
+        >
+          돌아가기
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="p-4 space-y-4">
+      {/* 헤더 */}
+      <div className="border rounded-lg bg-white p-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <button
+            className="px-2 py-1 text-xs border rounded hover:bg-gray-50"
+            onClick={() => navigate("/admin/chat")}
+            aria-label="목록으로"
+          >
+            ← 목록
+          </button>
+          <div className="text-sm font-semibold">방 #{roomId}</div>
+        </div>
+        <div className="text-xs">
+          <span className={connected ? "text-green-600" : "text-gray-400"}>
+            {connected ? "● 실시간 연결됨" : "○ 연결 대기"}
+          </span>
+        </div>
+      </div>
+
+      {/* 메시지 리스트 */}
+      <div className="border rounded-lg bg-white h-[65vh] flex flex-col">
+        <div className="px-3 py-2 text-sm border-b">대화</div>
+
+        {loading && (
+          <div className="p-4 text-sm text-gray-500">
+            히스토리를 불러오는 중...
+          </div>
+        )}
+        {!loading && error && (
+          <div className="p-4 text-sm text-red-600">{error}</div>
+        )}
+
+        <div
+          ref={listRef}
+          className="flex-1 overflow-y-auto px-3 py-2 space-y-3"
+        >
+          {messages.length === 0 && !loading && !error && (
+            <div className="text-sm text-gray-500">메시지가 없습니다.</div>
+          )}
+
+          {/* 수정됨: 내 글/상대 글 정렬 · 색상 분기 */}
+          {messages.map((m) => {
+            const bubble =
+              "inline-block max-w-[80%] px-3 py-2 rounded-2xl whitespace-pre-wrap text-sm";
+            const mineBubble = "bg-indigo-600 text-white rounded-br-sm"; // 내 말풍선(오른쪽), 우하단 각 살짝
+            const otherBubble = "bg-gray-100 text-gray-900 rounded-bl-sm"; // 상대 말풍선(왼쪽), 좌하단 각 살짝
+
+            return (
+              <div
+                key={m.id}
+                className={`flex ${m.isMine ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`flex flex-col ${
+                    m.isMine ? "items-end" : "items-start"
+                  }`}
+                >
+                  <div
+                    className={`${bubble} ${
+                      m.isMine ? mineBubble : otherBubble
+                    }`}
+                  >
+                    {m.message}
+                  </div>
+                  <div
+                    className={`mt-1 text-[10px] ${
+                      m.isMine
+                        ? "text-indigo-400 text-right"
+                        : "text-gray-400 text-left"
+                    }`}
+                  >
+                    {String(m.time).replace("T", " ").slice(0, 16)}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        {/* 입력창 */}
+        <form onSubmit={handleSubmit} className="border-t px-3 py-2 flex gap-2">
+          <input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            placeholder="메시지를 입력하세요"
+            className="flex-1 border rounded px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-indigo-200"
+          />
+          <button
+            type="submit"
+            disabled={!connected || !text.trim()}
+            className="px-4 py-2 rounded bg-indigo-600 text-white text-sm disabled:opacity-50"
+          >
+            보내기
+          </button>
+        </form>
+      </div>
+    </div>
+  );
+}

@@ -11,7 +11,13 @@ const linkCls = ({ isActive }) =>
   ].join(" ");
 
 export default function AdminSideBar() {
-  const name = useSelector((s) => s.auth?.user?.name) ?? "비회원";
+  const user = useSelector((s) => s.auth?.user);
+  const name = user?.name ?? "비회원";
+
+  const email = String(user?.email ?? "")
+    .trim()
+    .toLowerCase();
+  const checkInfo = email === "info@dongcheolcoding.life";
 
   return (
     <aside className="w-full h-full shrink-0 ">
@@ -31,6 +37,11 @@ export default function AdminSideBar() {
               <NavLink to="course" className={linkCls}>
                 강의관리
               </NavLink>
+              {checkInfo && (
+                <NavLink to="chat" className={linkCls}>
+                  문의하기
+                </NavLink>
+              )}
             </div>
           </div>
         </div>

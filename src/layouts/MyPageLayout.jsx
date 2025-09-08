@@ -70,9 +70,8 @@ export default function MyPageLayout() {
     return <Navigate to="/" replace />;
   }
 
-  /* 수정됨: 고정 높이 제거(h-...), 하위 컨테이너의 h-full 제거, 푸터와 간격 확보를 위해 pb-24 추가 */
   return (
-    <div className="w-full min-h-[calc(100vh-98px)] bg-gray-50 p-20 pb-24">
+    <div className="w-full min-h-[calc(100vh-98px)] bg-gray-50 p-10 pb-24">
       <div className="mx-auto max-w-7xl">
         <div className="grid grid-cols-[16rem_1fr] gap-6">
           <SideBar />
