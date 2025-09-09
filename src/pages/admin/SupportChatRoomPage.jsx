@@ -1,49 +1,32 @@
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStompChat } from "../../lib/useStompChat";
 import { useSelector } from "react-redux";
 
-// API BASE (절대 URL 권장)
 const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
   /\/$/,
   ""
 );
-
-// API BASE → WS BASE 변환 (https→wss, http→ws) + SockJS 엔드포인트 고정
-function toWsBase(httpBase) {
-  try {
-    const u = new URL(httpBase);
-    const wsProto = u.protocol === "https:" ? "wss:" : "ws:";
-    return `${wsProto}//${u.host}/api/ws-chat-sockjs`;
-  } catch {
-    // 상대경로일 때(개발 환경), 현재 호스트 기준
-    const isHttps = window.location.protocol === "https:";
-    return `${isHttps ? "wss" : "ws"}://${
-      window.location.host
-    }/api/ws-chat-sockjs`;
-  }
-}
-const WS_BASE = toWsBase(API_BASE);
+const SOCK_URL = `${API_BASE}/api/ws-chat-sockjs`; // ← https://로 고정
 
 export default function SupportChatRoomPage() {
   const navigate = useNavigate();
   const { roomId: roomIdParam } = useParams();
   const roomId = Number(roomIdParam);
 
-  // 현재 로그인 사용자 식별(id/email)
   const meId = useSelector((s) => s.auth?.user?.id);
   const meEmail = useSelector((s) => s.auth?.user?.email);
 
-  // 수정됨: 프록시 우회, 직접 WS 연결(두 번째 인수로 WS_BASE 전달)
+  // 두 번째 인수로 SockJS URL(https://...) 전달
   const { connected, inbox, loading, send, error } = useStompChat(
     roomId,
-    WS_BASE
+    SOCK_URL
   );
 
   const [text, setText] = useState("");
   const listRef = useRef(null);
 
-  // 메시지 렌더용: 날짜/보낸이 정보 정규화(+ isMine)
   const messages = useMemo(() => {
     return (inbox ?? []).map((m) => {
       const senderId = m.senderUserId ?? m.senderId ?? null;
@@ -63,7 +46,6 @@ export default function SupportChatRoomPage() {
     });
   }, [inbox, meId, meEmail]);
 
-  // 하단 자동 스크롤
   useEffect(() => {
     const el = listRef.current;
     if (!el) return;
@@ -78,7 +60,6 @@ export default function SupportChatRoomPage() {
     setText("");
   };
 
-  // 로딩/에러/빈방 처리
   if (Number.isNaN(roomId)) {
     return (
       <div className="p-4">
@@ -100,7 +81,7 @@ export default function SupportChatRoomPage() {
         <div className="flex items-center gap-3">
           <button
             className="px-2 py-1 text-xs border rounded hover:bg-gray-50"
-            onClick={() => navigate("/admin/chat")}
+            onClick={() => navigate("/admin/support/chat")}
             aria-label="목록으로"
           >
             ← 목록
@@ -135,12 +116,11 @@ export default function SupportChatRoomPage() {
             <div className="text-sm text-gray-500">메시지가 없습니다.</div>
           )}
 
-          {/* 내 글/상대 글 정렬 · 색상 분기 */}
           {messages.map((m) => {
             const bubble =
               "inline-block max-w-[80%] px-3 py-2 rounded-2xl whitespace-pre-wrap text-sm";
-            const mineBubble = "bg-indigo-600 text-white rounded-br-sm"; // 내 말풍선(오른쪽)
-            const otherBubble = "bg-gray-100 text-gray-900 rounded-bl-sm"; // 상대 말풍선(왼쪽)
+            const mineBubble = "bg-indigo-600 text-white rounded-br-sm";
+            const otherBubble = "bg-gray-100 text-gray-900 rounded-bl-sm";
 
             return (
               <div
