@@ -1,11 +1,13 @@
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStompChat } from "../../lib/useStompChat";
 import { useSelector } from "react-redux";
 
 // API BASE (절대 URL 권장)
-const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
+  /\/$/,
+  ""
+);
 
 // API BASE → WS BASE 변환 (https→wss, http→ws) + SockJS 엔드포인트 고정
 function toWsBase(httpBase) {
@@ -16,7 +18,9 @@ function toWsBase(httpBase) {
   } catch {
     // 상대경로일 때(개발 환경), 현재 호스트 기준
     const isHttps = window.location.protocol === "https:";
-    return `${isHttps ? "wss" : "ws"}://${window.location.host}/api/ws-chat-sockjs`;
+    return `${isHttps ? "wss" : "ws"}://${
+      window.location.host
+    }/api/ws-chat-sockjs`;
   }
 }
 const WS_BASE = toWsBase(API_BASE);
@@ -31,7 +35,10 @@ export default function SupportChatRoomPage() {
   const meEmail = useSelector((s) => s.auth?.user?.email);
 
   // 수정됨: 프록시 우회, 직접 WS 연결(두 번째 인수로 WS_BASE 전달)
-  const { connected, inbox, loading, send, error } = useStompChat(roomId, WS_BASE);
+  const { connected, inbox, loading, send, error } = useStompChat(
+    roomId,
+    WS_BASE
+  );
 
   const [text, setText] = useState("");
   const listRef = useRef(null);
@@ -93,7 +100,7 @@ export default function SupportChatRoomPage() {
         <div className="flex items-center gap-3">
           <button
             className="px-2 py-1 text-xs border rounded hover:bg-gray-50"
-            onClick={() => navigate("/admin/support/chat")} 
+            onClick={() => navigate("/admin/chat")}
             aria-label="목록으로"
           >
             ← 목록
