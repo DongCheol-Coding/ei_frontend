@@ -1,8 +1,3 @@
-// src/lib/useStompChat.js
-// [설명] STOMP + SockJS 훅: 히스토리 로드(REST) + 실시간 수신(개인 큐 구독) + 전송
-// - 쿠키 Path=/api 문제를 우회하기 위해 SockJS 엔드포인트를 /api/ws-chat-sockjs 로 접속합니다.
-// - 백엔드 WebSocketConfig: registry.addEndpoint("/ws-chat-sockjs").withSockJS() 가 전제입니다.
-
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getMessages } from "../services/api/chatApi";
 
@@ -53,7 +48,10 @@ export function useStompChat(roomId) {
         const SockJS = SockJSMod.default || SockJSMod;
 
         // 쿠키(Path=/api) 부착을 위해 /api 프리픽스 경로 사용 (Vite proxy가 /ws-chat-sockjs 로 리라이트)
-        const base = "/api/ws-chat-sockjs";
+        const base =
+          (location.protocol === "https:" ? "https://" : "http://") +
+          "api.dongcheolcoding.life/api/ws-chat-sockjs";
+
         const webSocketFactory = () =>
           new SockJS(base, null, {
             withCredentials: true,
