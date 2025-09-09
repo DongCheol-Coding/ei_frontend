@@ -1,10 +1,10 @@
 // src/lib/useStompChat.js
 /*
 [변경 요약]
-- publish 시 content-type, receipt 헤더 추가(서버 수신 확인)
-- 발행 경로를 APP_PREFIX(기본 '/app')로 구성 → 서버 setApplicationDestinationPrefixes와 일치
-- 구독 경로를 /topic/chat/{id}, /user/queue/chat/{id} 동시 구독(브로드캐스트/개인큐 대응)
-- receipt 타임아웃(예: 5s)으로 서버 미처리 탐지
+- SockJS XHR 폴백에 withCredentials 적용(교차도메인 쿠키 보장)
+- publish 본문에 message/content/text 모두 포함(서버 DTO 불일치 방지)
+- STOMP ERROR/RECEIPT/UNHANDLED 로깅 강화(문제 원인 즉시 식별)
+- 구독: /topic/chat/{id}, /user/queue/chat/{id} (백엔드 설정과 일치)
 */
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getMessages } from "../services/api/chatApi";
@@ -64,7 +64,15 @@ export function useStompChat(roomId, sockUrlOrBase) {
         const sockUrl = raw
           .replace(/^ws:\/\//i, "http://")
           .replace(/^wss:\/\//i, "https://");
-        const webSocketFactory = () => new SockJS(sockUrl);
+
+        // 수정됨: XHR 폴백에서도 쿠키 전송 보장
+        const webSocketFactory = () =>
+          new SockJS(sockUrl, null, {
+            transportOptions: {
+              xhrStream: { withCredentials: true },
+              xhrPolling: { withCredentials: true },
+            },
+          });
 
         const c = new Client({
           webSocketFactory,
@@ -82,19 +90,38 @@ export function useStompChat(roomId, sockUrlOrBase) {
                 try {
                   const msg = JSON.parse(frame.body);
                   setInbox((prev) => [...prev, msg]);
-                } catch {}
+                } catch (e) {
+                  console.warn("[useStompChat] parse error:", e, frame.body);
+                }
               })
             );
           },
-          onStompError: () => setConnected(false),
-          onWebSocketError: () => setConnected(false),
+          onStompError: (frame) => {
+            setConnected(false);
+            console.error(
+              "[useStompChat] STOMP ERROR:",
+              frame.headers?.message,
+              frame.body
+            );
+            setError(frame.headers?.message || "STOMP 오류");
+          },
+          onWebSocketError: (e) => {
+            setConnected(false);
+            console.error("[useStompChat] WS ERROR:", e);
+          },
           onWebSocketClose: () => setConnected(false),
           debug: () => {},
         });
 
+        // receipt/미처리/미구독 디버그
+        c.onUnhandledMessage = (m) =>
+          console.warn("[useStompChat] unhandled MESSAGE:", m);
+        c.onUnhandledReceipt = (r) =>
+          console.warn("[useStompChat] unhandled RECEIPT:", r);
+        c.onUnhandledFrame = (f) =>
+          console.warn("[useStompChat] unhandled FRAME:", f);
         c.onReceipt = (frame) => {
-          // 서버가 처리한 publish에 대해 영수증 도착
-          // console.debug("Receipt OK:", frame.headers["receipt-id"]);
+          // console.debug("RECEIPT:", frame.headers["receipt-id"]);
         };
 
         c.activate();
@@ -120,18 +147,32 @@ export function useStompChat(roomId, sockUrlOrBase) {
 
   const send = useCallback(
     (text) => {
-      const body = { message: text, roomId }; // roomId 포함(서버 DTO에 따라 무시 가능)
+      const t = text?.trim();
+      if (!t) return;
 
       try {
-        const receiptId = `send-${roomId}-${Date.now()}`;
-        const dest = `${APP_PREFIX}/chat/${roomId}`; // 서버 @MessageMapping("/chat/{roomId}")와 일치해야 함
+        const dest = `${APP_PREFIX}/chat/${roomId}`; // 백엔드 setApplicationDestinationPrefixes("/app")와 일치
+        const body = {
+          // 수정됨: 서버 DTO 불일치 대비
+          message: t,
+          content: t,
+          text: t,
+          roomId,
+        };
 
-        // 5초 내 receipt 없으면 경고(서버에서 라우팅/핸들러 미구현 가능성)
-        const t = setTimeout(() => {
-          console.warn("[useStompChat] no receipt from server:", receiptId);
-          // 필요시 사용자에게 표시:
-          // setError("메시지가 서버에 전달되지 않았습니다. (@MessageMapping 경로 확인 필요)");
+        const receiptId = `send-${roomId}-${Date.now()}`;
+        const to = setTimeout(() => {
+          console.warn(
+            "[useStompChat] NO RECEIPT (핸들러/경로 확인 필요):",
+            dest
+          );
         }, 5000);
+
+        const prevOnReceipt = clientRef.current?.onReceipt;
+        clientRef.current.onReceipt = (frame) => {
+          if (frame.headers["receipt-id"] === receiptId) clearTimeout(to);
+          prevOnReceipt?.(frame);
+        };
 
         clientRef.current?.publish({
           destination: dest,
@@ -141,13 +182,6 @@ export function useStompChat(roomId, sockUrlOrBase) {
             receipt: receiptId,
           },
         });
-
-        // receipt 도착 시 타이머 해제
-        const origOnReceipt = clientRef.current?.onReceipt;
-        clientRef.current.onReceipt = (frame) => {
-          if (frame.headers["receipt-id"] === receiptId) clearTimeout(t);
-          origOnReceipt?.(frame);
-        };
       } catch (e) {
         console.warn("[useStompChat] send error:", e);
       }
