@@ -1,7 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
 
-const ROOM_ROUTE_BASE = "/admin/support/chat";
+const ROOM_ROUTE_BASE = "/admin/chat";
 const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
   /\/$/,
   ""
