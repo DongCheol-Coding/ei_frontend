@@ -1,22 +1,17 @@
-// src/lib/useStompChat.js
-/*
-[수정됨: B안(동일 출처 우회 경로) 전용]
-- SOCK_URL을 "/api/ws-chat-sockjs"로 고정(절대 URL 사용 금지)
-- SockJS 상대경로 사용(현재 origin 기준 자동 https/wss 업그레이드)
-- XHR 폴백 withCredentials 유지(쿠키 인증 보장)
-- 서버 계약: SEND → `${APP_PREFIX}/chat.send`, SUBSCRIBE → `/user/queue/messages`
-- REST 히스토리 로딩 유지
-*/
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getMessages } from "../services/api/chatApi";
 
-const SOCK_URL = "/api/ws-chat-sockjs";
+const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
+  /\/$/,
+  ""
+);
+const SOCK_URL = `${API_BASE}/api/ws-chat-sockjs`;
 const APP_PREFIX = (import.meta.env.VITE_STOMP_APP_PREFIX || "/app").replace(
   /\/$/,
   ""
 );
 
-export function useStompChat(roomId) {
+export function useStompChat(roomId, sockUrlOrBase = SOCK_URL) {
   const clientRef = useRef(null);
   const subRef = useRef(null);
   const [connected, setConnected] = useState(false);
@@ -59,10 +54,13 @@ export function useStompChat(roomId) {
         if (!alive) return;
 
         const SockJS = SockJSMod.default || SockJSMod;
+        const sockUrl = sockUrlOrBase
+          .replace(/^ws:\/\//i, "http://")
+          .replace(/^wss:\/\//i, "https://");
 
         const webSocketFactory = () =>
-          new SockJS(SOCK_URL, null, {
-            // 교차도메인/XHR 폴백에서도 쿠키 포함
+          new SockJS(sockUrl, null, {
+            // 교차도메인 XHR 폴백에서도 쿠키 포함
             transportOptions: {
               xhrStream: { withCredentials: true },
               xhrPolling: { withCredentials: true },
@@ -78,10 +76,11 @@ export function useStompChat(roomId) {
             if (!alive) return;
             setConnected(true);
 
-            // 서버가 convertAndSendToUser(..., "/queue/messages", ...)로 발행
+            // 서버가 convertAndSendToUser(..., "/queue/messages", ...)로 쏨
             subRef.current = c.subscribe("/user/queue/messages", (frame) => {
               try {
                 const msg = JSON.parse(frame.body);
+                // 현재 방의 메시지만 반영
                 if (Number(msg?.chatRoomId) === Number(roomId)) {
                   setInbox((prev) => [...prev, msg]);
                 }
@@ -124,9 +123,9 @@ export function useStompChat(roomId) {
       } catch {}
       setConnected(false);
     };
-  }, [roomId]);
+  }, [roomId, sockUrlOrBase]);
 
-  // 3) 전송 (@MessageMapping("chat.send")에 맞춤)
+  // 3) 전송 (서버 @MessageMapping("chat.send")에 맞춤)
   const send = useCallback(
     (text) => {
       const t = String(text ?? "").trim();
@@ -136,7 +135,7 @@ export function useStompChat(roomId) {
 
       const body = JSON.stringify({ chatRoomId: roomId, message: t });
       c.publish({
-        destination: `${APP_PREFIX}/chat.send`,
+        destination: `${APP_PREFIX}/chat.send`, // ← 서버 계약대로 복원
         body,
         headers: { "content-type": "application/json;charset=UTF-8" },
       });
