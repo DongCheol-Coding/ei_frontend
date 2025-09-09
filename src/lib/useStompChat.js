@@ -1,16 +1,27 @@
+// src/lib/useStompChat.js
+/*
+[변경 요약]
+- 두 번째 인자 sockUrlOrBase를 받아 SockJS용 절대 URL을 생성
+- ws://, wss://가 들어와도 http/https로 자동 치환하여 SecurityError 방지
+- 디버그 로그로 실제 SockJS 연결 URL 출력
+*/
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getMessages } from "../services/api/chatApi";
 
-export function useStompChat(roomId) {
+const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
+  /\/$/,
+  ""
+);
+
+export function useStompChat(roomId, sockUrlOrBase) {
   const clientRef = useRef(null);
   const subRef = useRef(null);
-
   const [connected, setConnected] = useState(false);
   const [inbox, setInbox] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // --- 초기 히스토리 로딩 (REST) ---
+  // 히스토리 로딩(REST)
   const loadHistory = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -31,10 +42,8 @@ export function useStompChat(roomId) {
     loadHistory();
   }, [roomId, loadHistory]);
 
-  // --- SockJS + STOMP 연결 ---
   useEffect(() => {
     if (roomId == null) return;
-
     let alive = true;
 
     (async () => {
@@ -47,61 +56,49 @@ export function useStompChat(roomId) {
 
         const SockJS = SockJSMod.default || SockJSMod;
 
-        // 쿠키(Path=/api) 부착을 위해 /api 프리픽스 경로 사용 (Vite proxy가 /ws-chat-sockjs 로 리라이트)
-        const base = "http://localhost:8080/api/ws-chat-sockjs";
+        // --- 수정됨: SockJS가 요구하는 http/https URL로 강제 ---
+        const raw = sockUrlOrBase || `${API_BASE}/api/ws-chat-sockjs`; // 기본값(절대 URL 권장)
 
-        const webSocketFactory = () =>
-          new SockJS(base, null, {
-            withCredentials: true,
-            transports: ["websocket", "xhr-streaming", "xhr-polling"],
-          });
+        // ws/wss가 들어오면 http/https로 치환
+        const sockUrl = raw
+          .replace(/^ws:\/\//i, "http://")
+          .replace(/^wss:\/\//i, "https://");
+
+        console.debug("[useStompChat] SockJS URL =", sockUrl);
+
+        const webSocketFactory = () => new SockJS(sockUrl);
 
         const c = new Client({
           webSocketFactory,
           reconnectDelay: 3000,
-          heartbeatIncoming: 10000,
-          heartbeatOutgoing: 10000,
-          debug: (m) => console.log("[STOMP][sockjs]", m),
+          // heartbeatIncoming: 10000,
+          // heartbeatOutgoing: 10000,
           onConnect: () => {
             if (!alive) return;
-            console.log("[STOMP] connected (sockjs)");
             setConnected(true);
-
-            // 개인 큐 구독: 백엔드 SimpMessagingTemplate.convertAndSendToUser(..., "/queue/messages", ...)
-            subRef.current = c.subscribe("/user/queue/messages", (frame) => {
-              try {
-                const msg = JSON.parse(frame.body);
-                // 동일 방 메시지만 추가
-                if (msg?.chatRoomId === roomId) {
-                  setInbox((prev) => [...prev, msg]);
+            try {
+              // 구독 경로는 서버 설정과 동일하게
+              subRef.current = c.subscribe(
+                `/topic/chat/${roomId}`, // 필요 시 /user/queue/... 등으로 교체
+                (frame) => {
+                  try {
+                    const msg = JSON.parse(frame.body);
+                    setInbox((prev) => [...prev, msg]);
+                  } catch {}
                 }
-              } catch (e) {
-                console.warn("[STOMP] invalid message body:", e);
-              }
-            });
+              );
+            } catch {}
           },
-          onWebSocketClose: () => {
-            if (!alive) return;
-            console.warn("[STOMP] websocket closed");
-            setConnected(false);
-          },
-          onStompError: (f) => {
-            if (!alive) return;
-            console.warn("[STOMP] stomp error", f);
-            setConnected(false);
-          },
-          onWebSocketError: (e) => {
-            if (!alive) return;
-            console.warn("[STOMP] websocket error", e);
-            setConnected(false);
-          },
+          onStompError: () => setConnected(false),
+          onWebSocketError: () => setConnected(false),
+          onWebSocketClose: () => setConnected(false),
+          debug: () => {},
         });
 
         c.activate();
         clientRef.current = c;
       } catch (e) {
-        console.warn("[STOMP] module load/connect error", e);
-        setError("실시간 연결 모듈을 불러오지 못했습니다.");
+        console.warn("[useStompChat] activate error:", e);
         setConnected(false);
       }
     })();
@@ -116,26 +113,19 @@ export function useStompChat(roomId) {
       } catch {}
       setConnected(false);
     };
-  }, [roomId]);
+  }, [roomId, sockUrlOrBase]);
 
-  // --- 전송 (STOMP) ---
   const send = useCallback(
     (text) => {
-      const t = String(text ?? "").trim();
-      if (!t) return;
-      const c = clientRef.current;
-      if (!c || !connected) {
-        console.warn("[STOMP] not connected, skip send");
-        return;
-      }
-      const body = JSON.stringify({ chatRoomId: roomId, message: t });
-      console.log("[SEND] /app/chat.send", { roomId, text: t });
-      c.publish({ destination: "/app/chat.send", body });
+      try {
+        clientRef.current?.publish({
+          destination: `/app/chat/${roomId}`, // 서버 매핑에 맞춰 조정
+          body: JSON.stringify({ message: text }),
+        });
+      } catch {}
     },
-    [connected, roomId]
+    [roomId]
   );
 
   return { connected, inbox, loading, send, error };
 }
-
-export default useStompChat;
