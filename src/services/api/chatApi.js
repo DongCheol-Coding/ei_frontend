@@ -1,5 +1,3 @@
-// src/services/api/chatApi.js
-// [추가됨] 채팅/상담 관련 REST API 유틸
 import { api } from "./basicApi";
 
 /** 채팅방 개설: supportEmail로 1:1 방 열고 roomId(Long) 반환 */
@@ -33,11 +31,8 @@ export async function getMessages(roomId, opts = {}) {
   }));
 }
 
-/** 상담자 본인 프로필 조회
- * 기대 엔드포인트: GET /api/support/me  (없다면 /api/users/me 로 대체 가능)
- */
+/** 상담자 본인 프로필 조회(선택) */
 export async function getMySupportInfo(opts = {}) {
-  // 우선순위: /api/support/me → (404/501 등 실패 시) /api/users/me 폴백
   const tryGet = async (path) => {
     try {
       const r = await api.get(path, { signal: opts.signal });
@@ -48,12 +43,11 @@ export async function getMySupportInfo(opts = {}) {
   };
 
   const data =
-    (await tryGet("/api/support/me")) || (await tryGet("/api/users/me")); // 프로젝트에 따라 이 경로가 이미 있을 수 있음
+    (await tryGet("/api/support/me")) || (await tryGet("/api/users/me"));
 
   if (!data)
     throw new Error("지원되는 프로필 API가 없습니다. (/api/support/me 권장)");
 
-  // 정규화해서 반환(키 이름이 달라도 안전하게 매핑)
   return {
     id: data.id ?? data.userId ?? null,
     email: data.email ?? data.username ?? "",
@@ -65,30 +59,42 @@ export async function getMySupportInfo(opts = {}) {
   };
 }
 
-/** 상담자 본인 채팅방 목록(선택)
- * 기대 엔드포인트: GET /api/chat/rooms/support  → ChatService.getRoomsForSupport() 매핑
- * 반환 예시(간단화): [{ id, member: { id,email,name,avatarUrl }, support: { id,email,name } }]
- */
-export async function getSupportRooms(opts = {}) {
-  const res = await api.get("/api/chat/rooms/support/open", {
-    signal: opts.signal,
+/** 상담자 본인 채팅방 목록(ROLE_SUPPORT) - 백엔드: GET /api/chat/rooms/mine */
+export async function getSupportRooms(params = {}) {
+  const {
+    status = "open", // open | closed | all
+    page = 0,
+    size = 50,
+    sort = "createdAt,desc",
+    signal,
+  } = params;
+
+  const res = await api.get("/api/chat/rooms/mine", {
+    params: { status, page, size, sort },
+    signal,
   });
-  const raw = Array.isArray(res?.data) ? res.data : [];
-  return raw.map((r) => ({
-    id: r?.id ?? null,
-    member: {
-      id: r?.member?.id ?? null,
-      email: r?.member?.email ?? "",
-      name: r?.member?.name ?? r?.member?.nickname ?? "",
-      avatarUrl: r?.member?.avatarUrl ?? r?.member?.profileImageUrl ?? null,
-    },
-    support: {
-      id: r?.support?.id ?? null,
-      email: r?.support?.email ?? "",
-      name: r?.support?.name ?? r?.support?.nickname ?? "",
-    },
-    // 필요 시 백엔드에서 lastMessage/updatedAt 등을 포함해주면 그대로 노출 가능
+
+  const body = res?.data ?? {};
+  const content = Array.isArray(body?.content)
+    ? body.content
+    : Array.isArray(body)
+    ? body
+    : [];
+
+  const items = content.map((r) => ({
+    id: Number(r?.roomId ?? r?.id ?? 0),
+    memberName: r?.memberName ?? r?.member?.name ?? "",
+    memberEmail: r?.memberEmail ?? r?.member?.email ?? "",
+    createdAt: r?.createdAt ?? null,
+    closedAt: r?.closedAt ?? null,
     lastMessage: r?.lastMessage ?? null,
-    updatedAt: r?.updatedAt ?? null,
   }));
+
+  return {
+    items,
+    page: body?.pageable?.pageNumber ?? page,
+    size: body?.pageable?.pageSize ?? size,
+    totalPages: body?.totalPages ?? 1,
+    totalElements: body?.totalElements ?? items.length,
+  };
 }

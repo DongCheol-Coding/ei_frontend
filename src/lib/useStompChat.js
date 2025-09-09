@@ -1,9 +1,10 @@
 // src/lib/useStompChat.js
 /*
 [변경 요약]
-- 두 번째 인자 sockUrlOrBase를 받아 SockJS용 절대 URL을 생성
-- ws://, wss://가 들어와도 http/https로 자동 치환하여 SecurityError 방지
-- 디버그 로그로 실제 SockJS 연결 URL 출력
+- publish 시 content-type, receipt 헤더 추가(서버 수신 확인)
+- 발행 경로를 APP_PREFIX(기본 '/app')로 구성 → 서버 setApplicationDestinationPrefixes와 일치
+- 구독 경로를 /topic/chat/{id}, /user/queue/chat/{id} 동시 구독(브로드캐스트/개인큐 대응)
+- receipt 타임아웃(예: 5s)으로 서버 미처리 탐지
 */
 import { useEffect, useRef, useState, useCallback } from "react";
 import { getMessages } from "../services/api/chatApi";
@@ -12,16 +13,19 @@ const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
   /\/$/,
   ""
 );
+const APP_PREFIX = (import.meta.env.VITE_STOMP_APP_PREFIX || "/app").replace(
+  /\/$/,
+  ""
+);
 
 export function useStompChat(roomId, sockUrlOrBase) {
   const clientRef = useRef(null);
-  const subRef = useRef(null);
+  const subRefs = useRef([]);
   const [connected, setConnected] = useState(false);
   const [inbox, setInbox] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
-  // 히스토리 로딩(REST)
   const loadHistory = useCallback(async () => {
     setLoading(true);
     setError("");
@@ -38,12 +42,12 @@ export function useStompChat(roomId, sockUrlOrBase) {
   }, [roomId]);
 
   useEffect(() => {
-    if (roomId == null) return;
+    if (roomId == null || Number.isNaN(roomId)) return;
     loadHistory();
   }, [roomId, loadHistory]);
 
   useEffect(() => {
-    if (roomId == null) return;
+    if (roomId == null || Number.isNaN(roomId)) return;
     let alive = true;
 
     (async () => {
@@ -56,44 +60,42 @@ export function useStompChat(roomId, sockUrlOrBase) {
 
         const SockJS = SockJSMod.default || SockJSMod;
 
-        // --- 수정됨: SockJS가 요구하는 http/https URL로 강제 ---
-        const raw = sockUrlOrBase || `${API_BASE}/api/ws-chat-sockjs`; // 기본값(절대 URL 권장)
-
-        // ws/wss가 들어오면 http/https로 치환
+        const raw = sockUrlOrBase || `${API_BASE}/api/ws-chat-sockjs`;
         const sockUrl = raw
           .replace(/^ws:\/\//i, "http://")
           .replace(/^wss:\/\//i, "https://");
-
-        console.debug("[useStompChat] SockJS URL =", sockUrl);
-
         const webSocketFactory = () => new SockJS(sockUrl);
 
         const c = new Client({
           webSocketFactory,
           reconnectDelay: 3000,
-          // heartbeatIncoming: 10000,
-          // heartbeatOutgoing: 10000,
           onConnect: () => {
             if (!alive) return;
             setConnected(true);
-            try {
-              // 구독 경로는 서버 설정과 동일하게
-              subRef.current = c.subscribe(
-                `/topic/chat/${roomId}`, // 필요 시 /user/queue/... 등으로 교체
-                (frame) => {
-                  try {
-                    const msg = JSON.parse(frame.body);
-                    setInbox((prev) => [...prev, msg]);
-                  } catch {}
-                }
-              );
-            } catch {}
+
+            const paths = [
+              `/topic/chat/${roomId}`,
+              `/user/queue/chat/${roomId}`,
+            ];
+            subRefs.current = paths.map((p) =>
+              c.subscribe(p, (frame) => {
+                try {
+                  const msg = JSON.parse(frame.body);
+                  setInbox((prev) => [...prev, msg]);
+                } catch {}
+              })
+            );
           },
           onStompError: () => setConnected(false),
           onWebSocketError: () => setConnected(false),
           onWebSocketClose: () => setConnected(false),
           debug: () => {},
         });
+
+        c.onReceipt = (frame) => {
+          // 서버가 처리한 publish에 대해 영수증 도착
+          // console.debug("Receipt OK:", frame.headers["receipt-id"]);
+        };
 
         c.activate();
         clientRef.current = c;
@@ -106,8 +108,9 @@ export function useStompChat(roomId, sockUrlOrBase) {
     return () => {
       alive = false;
       try {
-        subRef.current?.unsubscribe();
+        subRefs.current.forEach((s) => s?.unsubscribe?.());
       } catch {}
+      subRefs.current = [];
       try {
         clientRef.current?.deactivate();
       } catch {}
@@ -117,12 +120,37 @@ export function useStompChat(roomId, sockUrlOrBase) {
 
   const send = useCallback(
     (text) => {
+      const body = { message: text, roomId }; // roomId 포함(서버 DTO에 따라 무시 가능)
+
       try {
+        const receiptId = `send-${roomId}-${Date.now()}`;
+        const dest = `${APP_PREFIX}/chat/${roomId}`; // 서버 @MessageMapping("/chat/{roomId}")와 일치해야 함
+
+        // 5초 내 receipt 없으면 경고(서버에서 라우팅/핸들러 미구현 가능성)
+        const t = setTimeout(() => {
+          console.warn("[useStompChat] no receipt from server:", receiptId);
+          // 필요시 사용자에게 표시:
+          // setError("메시지가 서버에 전달되지 않았습니다. (@MessageMapping 경로 확인 필요)");
+        }, 5000);
+
         clientRef.current?.publish({
-          destination: `/app/chat/${roomId}`, // 서버 매핑에 맞춰 조정
-          body: JSON.stringify({ message: text }),
+          destination: dest,
+          body: JSON.stringify(body),
+          headers: {
+            "content-type": "application/json;charset=UTF-8",
+            receipt: receiptId,
+          },
         });
-      } catch {}
+
+        // receipt 도착 시 타이머 해제
+        const origOnReceipt = clientRef.current?.onReceipt;
+        clientRef.current.onReceipt = (frame) => {
+          if (frame.headers["receipt-id"] === receiptId) clearTimeout(t);
+          origOnReceipt?.(frame);
+        };
+      } catch (e) {
+        console.warn("[useStompChat] send error:", e);
+      }
     },
     [roomId]
   );
