@@ -1,5 +1,10 @@
-// 상담자 인박스 실시간 수신 훅: /user/queue/messages 전체를 받아 방 리스트/미리보기 갱신
 import { useEffect, useRef, useState } from "react";
+
+const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
+  /\/$/,
+  ""
+);
+const DEFAULT_SOCK_URL = `${API_BASE}/api/ws-chat-sockjs`;
 
 export default function useSupportInbox(wsBase) {
   const clientRef = useRef(null);
@@ -18,12 +23,16 @@ export default function useSupportInbox(wsBase) {
         if (!alive) return;
 
         const SockJS = SockJSMod.default || SockJSMod;
-        const base = wsBase || `${location.protocol}//${location.host}/ws`;
+        // 수정됨: 절대 URL(직접 연결) 사용
+        const base = wsBase || DEFAULT_SOCK_URL;
         const webSocketFactory = () => new SockJS(base);
 
         const c = new Client({
           webSocketFactory,
           reconnectDelay: 3000,
+          // 필요 시 하트비트 활성화 (서버와 맞춰 쓰세요)
+          // heartbeatIncoming: 10000,
+          // heartbeatOutgoing: 10000,
           onConnect: () => {
             if (!alive) return;
             setConnected(true);
@@ -40,10 +49,13 @@ export default function useSupportInbox(wsBase) {
                   });
                   return next;
                 });
-              } catch {}
+              } catch {
+                // noop
+              }
             });
           },
           onStompError: () => setConnected(false),
+          onWebSocketError: () => setConnected(false), // 추가됨
           onWebSocketClose: () => setConnected(false),
           debug: () => {},
         });

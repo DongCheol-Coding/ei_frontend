@@ -48,9 +48,7 @@ export function useStompChat(roomId) {
         const SockJS = SockJSMod.default || SockJSMod;
 
         // 쿠키(Path=/api) 부착을 위해 /api 프리픽스 경로 사용 (Vite proxy가 /ws-chat-sockjs 로 리라이트)
-        const base =
-          (location.protocol === "https:" ? "https://" : "http://") +
-          "api.dongcheolcoding.life/api/ws-chat-sockjs";
+        const base = "http://localhost:8080/api/ws-chat-sockjs";
 
         const webSocketFactory = () =>
           new SockJS(base, null, {
