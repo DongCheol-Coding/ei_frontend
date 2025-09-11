@@ -9,7 +9,6 @@ const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
   /\/$/,
   ""
 );
-
 // SockJS는 https:// 또는 http:// 만 허용(내부에서 ws/wss 업그레이드 처리)
 const SOCK_URL = `${API_BASE}/api/ws-chat-sockjs`;
 
@@ -20,9 +19,11 @@ export default function SupportChatRoomPage() {
   const { roomId: roomIdParam } = useParams();
   const roomId = Number(roomIdParam);
 
-  // 현재 로그인 사용자 식별(id/email)
+  // 현재 로그인 사용자 정보
   const meId = useSelector((s) => s.auth?.user?.id);
   const meEmail = useSelector((s) => s.auth?.user?.email);
+  const me = useSelector((s) => s.auth?.user);
+  const myAvatarUrl = me?.imageUrl ?? "";
 
   // 직접 연결: 두 번째 인자로 SockJS 절대 URL(https://...) 전달
   const { connected, inbox, loading, send, error } = useStompChat(
@@ -33,7 +34,30 @@ export default function SupportChatRoomPage() {
   const [text, setText] = useState("");
   const listRef = useRef(null);
 
-  // 메시지 렌더용: 날짜/보낸이 정보 정규화(+ isMine)
+  /* [추가됨: 문자열/JSON 메시지 유연 파싱 유틸]
+     - 서버가 문자열만 저장/중계해도 본문에 JSON이 들어오면 추출
+     - { message, imageUrl } 형태 우선 사용, 그 외는 일반 텍스트로 처리 */
+  const pickTextAndAvatar = (rawMessage) => {
+    let bodyText = rawMessage ?? "";
+    let avatarUrl = "";
+    if (typeof bodyText === "string") {
+      try {
+        const parsed = JSON.parse(bodyText);
+        if (parsed && typeof parsed === "object" && "message" in parsed) {
+          bodyText = String(parsed.message ?? "");
+          avatarUrl =
+            typeof parsed.imageUrl === "string" ? parsed.imageUrl : "";
+        }
+      } catch (_) {
+        // 일반 텍스트면 그대로 사용
+      }
+    }
+    return { bodyText, avatarUrl };
+  };
+
+  /* [수정됨: 메시지 정규화에 avatarUrl 포함]
+     - isMine 판별 유지
+     - time 문자열 정규화 유지 */
   const messages = useMemo(() => {
     return (inbox ?? []).map((m) => {
       const senderId = m.senderUserId ?? m.senderId ?? null;
@@ -44,9 +68,12 @@ export default function SupportChatRoomPage() {
           senderEmail &&
           String(senderEmail).toLowerCase() === String(meEmail).toLowerCase());
 
+      const { bodyText, avatarUrl } = pickTextAndAvatar(m.message);
+
       return {
         id: m.id ?? `${m.sentAt ?? ""}-${Math.random()}`,
-        message: m.message ?? "",
+        message: bodyText,
+        avatarUrl, // 상대 아바타 URL(없으면 "")
         time: (m.sentAt ?? m.createdAt ?? "").toString(),
         isMine,
       };
@@ -60,11 +87,13 @@ export default function SupportChatRoomPage() {
     el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
+  /* [수정됨: 전송 시 JSON으로 message + imageUrl 포함]
+     - imageUrl이 없으면 "" */
   const handleSubmit = (e) => {
     e.preventDefault();
     const t = text.trim();
-    if (!t) return;
-    send(t);
+    if (!t || !connected) return;
+    send({ message: t, imageUrl: myAvatarUrl });
     setText("");
   };
 
@@ -133,7 +162,6 @@ export default function SupportChatRoomPage() {
             const otherBubble = "bg-gray-100 text-gray-900 rounded-bl-sm"; // 상대 말풍선(왼쪽)
 
             if (m.isMine) {
-              // 내 메시지: 기존과 동일
               return (
                 <div key={m.id} className="flex justify-end">
                   <div className="flex flex-col items-end">
@@ -151,15 +179,18 @@ export default function SupportChatRoomPage() {
               );
             }
 
-            // 상대 메시지: 아바타(noImage) + 말풍선 + 타임스탬프
+            // 상대 메시지: 아바타(받은 URL 또는 noImage) + 말풍선 + 타임스탬프
             return (
               <div key={m.id} className="flex justify-start">
                 <div className="flex items-end gap-2">
                   <img
-                    src={noImage}
+                    src={m.avatarUrl || noImage}
                     alt="상대 아바타"
                     className="w-7 h-7 rounded-full object-cover ring-[1.5px] ring-gray-300 shadow"
                     loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.src = noImage;
+                    }}
                   />
                   <div className="flex flex-col items-start">
                     <div
