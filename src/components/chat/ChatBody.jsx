@@ -1,6 +1,15 @@
+// [수정 안내]
+// - 말풍선 폭을 글자 수 기준으로 제한: CHARS_PER_LINE(ch)
+// - 긴 단어/URL도 줄바꿈: break-words 유지
+// - 내용이 N글자 이하이면 1줄, 초과 시 2줄 이상으로 자연스럽게 줄바꿈
+
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useSelector } from "react-redux";
 import { useStompChat } from "../../lib/useStompChat.js";
+
+/* 한 줄 허용 문자 수(영문 1ch, 한글은 보통 2ch 정도 폭)
+   예) 한글 16자 기준이면 대략 32ch 권장 */
+const CHARS_PER_LINE = 32;
 
 export default function ChatBody({ roomId }) {
   const { connected, inbox, loading, send } = useStompChat(roomId);
@@ -78,8 +87,9 @@ export default function ChatBody({ roomId }) {
         style={{ WebkitOverflowScrolling: "touch" }}
       >
         {messages.map((m) => {
+          // 말풍선: 글자 수 기준 최대 폭 지정(N ch), 내용이 짧으면 1줄 유지
           const bubble =
-            "inline-block max-w-[80%] px-3 py-2 rounded-2xl whitespace-pre-wrap text-sm break-words";
+            "inline-block w-fit px-3 py-2 rounded-2xl whitespace-pre-wrap text-sm break-words";
           const mineBubble = "bg-indigo-600 text-white rounded-br-sm";
           const otherBubble = "bg-gray-100 text-gray-900 rounded-bl-sm";
 
@@ -95,6 +105,7 @@ export default function ChatBody({ roomId }) {
               >
                 <div
                   className={`${bubble} ${m.isMine ? mineBubble : otherBubble}`}
+                  style={{ maxWidth: `${CHARS_PER_LINE}ch` }}
                 >
                   {m.message}
                 </div>
