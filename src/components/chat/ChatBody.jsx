@@ -10,9 +10,6 @@ const CHARS_PER_LINE = 32;
 export default function ChatBody({ roomId }) {
   const { connected, inbox, loading, send } = useStompChat(roomId);
 
-  const user = useSelector((s) => s.auth?.user);
-  const myAvatarUrl = user?.imageUrl ?? "";
-
   const meId = useSelector((s) => s.auth?.user?.id);
   const meEmail = useSelector((s) => s.auth?.user?.email);
 
