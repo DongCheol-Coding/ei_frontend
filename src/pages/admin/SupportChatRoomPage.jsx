@@ -1,14 +1,22 @@
-
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStompChat } from "../../lib/useStompChat";
 import { useSelector } from "react-redux";
 
 // API BASE (절대 URL 권장)
-const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(/\/$/, "");
+const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
+  /\/$/,
+  ""
+);
 
 // SockJS는 https:// 또는 http:// 만 허용(내부에서 ws/wss 업그레이드 처리)
 const SOCK_URL = `${API_BASE}/api/ws-chat-sockjs`;
+
+/* -----------------------------------------------------------
+ * [추가] 한 줄에 허용할 "문자 수" 기준 (영문 1ch, 한글은 보통 2ch)
+ * - 예) 한글 16자 기준이면 대략 32ch 권장
+ * --------------------------------------------------------- */
+const CHARS_PER_LINE = 32;
 
 export default function SupportChatRoomPage() {
   const navigate = useNavigate();
@@ -20,7 +28,10 @@ export default function SupportChatRoomPage() {
   const meEmail = useSelector((s) => s.auth?.user?.email);
 
   // 직접 연결: 두 번째 인자로 SockJS 절대 URL(https://...) 전달
-  const { connected, inbox, loading, send, error } = useStompChat(roomId, SOCK_URL);
+  const { connected, inbox, loading, send, error } = useStompChat(
+    roomId,
+    SOCK_URL
+  );
 
   const [text, setText] = useState("");
   const listRef = useRef(null);
@@ -117,10 +128,15 @@ export default function SupportChatRoomPage() {
             <div className="text-sm text-gray-500">메시지가 없습니다.</div>
           )}
 
-          {/* 내 글/상대 글 정렬 · 색상 분기 */}
+          {/* -----------------------------------------------------------
+             [수정] 말풍선: 폭을 글자 수 기준으로 제한 + 강제 줄바꿈
+             - inline-block + w-fit : 설정한 폭(Nch) 이내면 1줄 유지
+             - maxWidth: `${CHARS_PER_LINE}ch` : 초과 시 자동 줄바꿈
+             - whitespace-pre-wrap + break-words : 긴 단어/URL도 줄바꿈
+             --------------------------------------------------------- */}
           {messages.map((m) => {
             const bubble =
-              "inline-block max-w-[80%] px-3 py-2 rounded-2xl whitespace-pre-wrap text-sm";
+              "inline-block w-fit px-3 py-2 rounded-2xl whitespace-pre-wrap break-words text-sm";
             const mineBubble = "bg-indigo-600 text-white rounded-br-sm"; // 내 말풍선(오른쪽)
             const otherBubble = "bg-gray-100 text-gray-900 rounded-bl-sm"; // 상대 말풍선(왼쪽)
 
@@ -138,6 +154,7 @@ export default function SupportChatRoomPage() {
                     className={`${bubble} ${
                       m.isMine ? mineBubble : otherBubble
                     }`}
+                    style={{ maxWidth: `${CHARS_PER_LINE}ch` }}
                   >
                     {m.message}
                   </div>
