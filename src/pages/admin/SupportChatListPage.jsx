@@ -1,5 +1,7 @@
 import { useEffect, useState, useMemo } from "react";
 import { useNavigate } from "react-router-dom";
+import { searchUsers } from "../../services/api/adminApi";
+import noImage from "../../assets/mypage/noimage.png";
 
 const ROOM_ROUTE_BASE = "/admin/chat";
 const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
@@ -13,6 +15,9 @@ export default function SupportChatPage() {
   const [rooms, setRooms] = useState([]); // [{ id, memberName, memberEmail, createdAt }]
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+
+  // email(소문자) -> imageUrl 매핑 저장소
+  const [avatarByEmail, setAvatarByEmail] = useState(() => new Map());
 
   // 날짜 표시 포맷(기존과 동일)
   const formatDate = (s) => String(s).replace("T", " ").slice(0, 16);
@@ -52,26 +57,69 @@ export default function SupportChatPage() {
     };
   }, []);
 
+  // 전체 유저를 불러와 email -> imageUrl 맵 구성
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const res = (await searchUsers?.({})) ?? {};
+        const list = Array.isArray(res?.data)
+          ? res.data
+          : Array.isArray(res)
+          ? res
+          : Array.isArray(res?.body?.data)
+          ? res.body.data
+          : [];
+
+        const map = new Map();
+        for (const u of list) {
+          if (!u || u.isDeleted) continue;
+          const email = String(u.email || "").toLowerCase();
+          const url = u.imageUrl || u.profileImageUrl || "";
+          if (email) map.set(email, url);
+        }
+        if (alive) setAvatarByEmail(map);
+      } catch (e) {
+        console.warn("[SupportChatPage] searchUsers error:", e);
+        if (alive) setAvatarByEmail(new Map());
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, []);
+
   const roomList = useMemo(() => {
     const arr = [...rooms];
     arr.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
     return arr;
   }, [rooms]);
 
-  const handleEnterRoom = (roomId) => {
-    navigate(`${ROOM_ROUTE_BASE}/${roomId}`);
+  const handleEnterRoom = (roomId, memberEmail) => {
+    const emailKey = String(memberEmail || "").toLowerCase();
+    const avatarUrl = avatarByEmail.get(emailKey) || "";
+    navigate(`${ROOM_ROUTE_BASE}/${roomId}`, {
+      state: { peerAvatarUrl: avatarUrl },
+    });
   };
 
-  // [디자인 개편] 항목 레이아웃 변경: 방번호 제거, 닉네임 강조, 우측 날짜 고정, 이니셜 아바타 추가
+  // Avatar: 이메일로 유저 이미지 찾기 + 실패/없음 시 noImage
   const Avatar = ({ name, email }) => {
-    const initial =
-      (name && name.trim().charAt(0)) ||
-      (email && email.trim().charAt(0)) ||
-      "?";
+    const emailKey = String(email || "").toLowerCase();
+    const matchedUrl = avatarByEmail.get(emailKey) || "";
+    const [broken, setBroken] = useState(false);
+
+    const src = matchedUrl && !broken ? matchedUrl : noImage;
+    const alt = (name || email || "회원") + " 프로필";
+
     return (
-      <div className="h-10 w-10 rounded-full bg-gray-100 border grid place-items-center text-sm font-semibold text-gray-700">
-        {String(initial).toUpperCase()}
-      </div>
+      <img
+        src={src}
+        alt={alt}
+        className="h-10 w-10 rounded-full object-cover border"
+        onError={() => setBroken(true)}
+        referrerPolicy="no-referrer"
+      />
     );
   };
 
@@ -106,7 +154,7 @@ export default function SupportChatPage() {
               return (
                 <button
                   key={r.id}
-                  onClick={() => handleEnterRoom(r.id)}
+                  onClick={() => handleEnterRoom(r.id, r.memberEmail)}
                   className="w-full px-4 py-3 hover:bg-gray-50 focus:bg-gray-50 transition text-left"
                   aria-label={`${displayName}와의 대화 들어가기`}
                 >

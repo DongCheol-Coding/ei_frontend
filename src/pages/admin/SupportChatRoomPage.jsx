@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import { useStompChat } from "../../lib/useStompChat";
 import { useSelector } from "react-redux";
 import noImage from "../../assets/mypage/noimage.png";
@@ -19,6 +19,10 @@ export default function SupportChatRoomPage() {
   const navigate = useNavigate();
   const { roomId: roomIdParam } = useParams();
   const roomId = Number(roomIdParam);
+
+  // 부모 라우트 state에서 상대 프로필 이미지 URL 수신
+  const location = useLocation();
+  const peerAvatarUrl = location?.state?.peerAvatarUrl || "";
 
   // 현재 로그인 사용자 식별(id/email)
   const meId = useSelector((s) => s.auth?.user?.id);
@@ -82,6 +86,10 @@ export default function SupportChatRoomPage() {
       </div>
     );
   }
+
+  // 상대 아바타: 부모 전달 URL 우선, 실패/없음 시 noImage
+  const [leftBroken, setLeftBroken] = useState(false);
+  const leftAvatarSrc = !leftBroken && peerAvatarUrl ? peerAvatarUrl : noImage;
 
   return (
     <div className="p-4 space-y-4">
@@ -151,15 +159,17 @@ export default function SupportChatRoomPage() {
               );
             }
 
-            // 상대 메시지: 아바타(noImage) + 말풍선 + 타임스탬프
+            // 상대 메시지: 부모에서 받은 이미지(없거나 깨지면 noImage)
             return (
               <div key={m.id} className="flex justify-start">
                 <div className="flex items-end gap-2">
                   <img
-                    src={noImage}
+                    src={leftAvatarSrc}
                     alt="상대 아바타"
                     className="w-7 h-7 rounded-full object-cover ring-[1.5px] ring-gray-300 shadow"
                     loading="lazy"
+                    onError={() => setLeftBroken(true)}
+                    referrerPolicy="no-referrer"
                   />
                   <div className="flex flex-col items-start">
                     <div
