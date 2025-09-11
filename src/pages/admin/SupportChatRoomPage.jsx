@@ -2,20 +2,16 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { useStompChat } from "../../lib/useStompChat";
 import { useSelector } from "react-redux";
+import noImage from "../../assets/mypage/noimage.png";
 
 // API BASE (절대 URL 권장)
 const API_BASE = (import.meta.env.VITE_API_SERVER_HOST || "/api").replace(
   /\/$/,
   ""
 );
-
 // SockJS는 https:// 또는 http:// 만 허용(내부에서 ws/wss 업그레이드 처리)
 const SOCK_URL = `${API_BASE}/api/ws-chat-sockjs`;
 
-/* -----------------------------------------------------------
- * [추가] 한 줄에 허용할 "문자 수" 기준 (영문 1ch, 한글은 보통 2ch)
- * - 예) 한글 16자 기준이면 대략 32ch 권장
- * --------------------------------------------------------- */
 const CHARS_PER_LINE = 32;
 
 export default function SupportChatRoomPage() {
@@ -23,9 +19,11 @@ export default function SupportChatRoomPage() {
   const { roomId: roomIdParam } = useParams();
   const roomId = Number(roomIdParam);
 
-  // 현재 로그인 사용자 식별(id/email)
+  // 현재 로그인 사용자 정보
   const meId = useSelector((s) => s.auth?.user?.id);
   const meEmail = useSelector((s) => s.auth?.user?.email);
+  const me = useSelector((s) => s.auth?.user);
+  const myAvatarUrl = me?.imageUrl ?? "";
 
   // 직접 연결: 두 번째 인자로 SockJS 절대 URL(https://...) 전달
   const { connected, inbox, loading, send, error } = useStompChat(
@@ -36,7 +34,30 @@ export default function SupportChatRoomPage() {
   const [text, setText] = useState("");
   const listRef = useRef(null);
 
-  // 메시지 렌더용: 날짜/보낸이 정보 정규화(+ isMine)
+  /* [추가됨: 문자열/JSON 메시지 유연 파싱 유틸]
+     - 서버가 문자열만 저장/중계해도 본문에 JSON이 들어오면 추출
+     - { message, imageUrl } 형태 우선 사용, 그 외는 일반 텍스트로 처리 */
+  const pickTextAndAvatar = (rawMessage) => {
+    let bodyText = rawMessage ?? "";
+    let avatarUrl = "";
+    if (typeof bodyText === "string") {
+      try {
+        const parsed = JSON.parse(bodyText);
+        if (parsed && typeof parsed === "object" && "message" in parsed) {
+          bodyText = String(parsed.message ?? "");
+          avatarUrl =
+            typeof parsed.imageUrl === "string" ? parsed.imageUrl : "";
+        }
+      } catch (_) {
+        // 일반 텍스트면 그대로 사용
+      }
+    }
+    return { bodyText, avatarUrl };
+  };
+
+  /* [수정됨: 메시지 정규화에 avatarUrl 포함]
+     - isMine 판별 유지
+     - time 문자열 정규화 유지 */
   const messages = useMemo(() => {
     return (inbox ?? []).map((m) => {
       const senderId = m.senderUserId ?? m.senderId ?? null;
@@ -47,9 +68,12 @@ export default function SupportChatRoomPage() {
           senderEmail &&
           String(senderEmail).toLowerCase() === String(meEmail).toLowerCase());
 
+      const { bodyText, avatarUrl } = pickTextAndAvatar(m.message);
+
       return {
         id: m.id ?? `${m.sentAt ?? ""}-${Math.random()}`,
-        message: m.message ?? "",
+        message: bodyText,
+        avatarUrl, // 상대 아바타 URL(없으면 "")
         time: (m.sentAt ?? m.createdAt ?? "").toString(),
         isMine,
       };
@@ -63,11 +87,13 @@ export default function SupportChatRoomPage() {
     el.scrollTop = el.scrollHeight;
   }, [messages.length]);
 
+  /* [수정됨: 전송 시 JSON으로 message + imageUrl 포함]
+     - imageUrl이 없으면 "" */
   const handleSubmit = (e) => {
     e.preventDefault();
     const t = text.trim();
-    if (!t) return;
-    send(t);
+    if (!t || !connected) return;
+    send({ message: t, imageUrl: myAvatarUrl });
     setText("");
   };
 
@@ -101,8 +127,9 @@ export default function SupportChatRoomPage() {
           <div className="text-sm font-semibold">방 #{roomId}</div>
         </div>
         <div className="text-xs">
+          연결 상태:{" "}
           <span className={connected ? "text-green-600" : "text-gray-400"}>
-            {connected ? "● 실시간 연결됨" : "○ 연결 대기"}
+            {connected ? "정상" : "연결 끊김"}
           </span>
         </div>
       </div>
@@ -128,44 +155,53 @@ export default function SupportChatRoomPage() {
             <div className="text-sm text-gray-500">메시지가 없습니다.</div>
           )}
 
-          {/* -----------------------------------------------------------
-             [수정] 말풍선: 폭을 글자 수 기준으로 제한 + 강제 줄바꿈
-             - inline-block + w-fit : 설정한 폭(Nch) 이내면 1줄 유지
-             - maxWidth: `${CHARS_PER_LINE}ch` : 초과 시 자동 줄바꿈
-             - whitespace-pre-wrap + break-words : 긴 단어/URL도 줄바꿈
-             --------------------------------------------------------- */}
           {messages.map((m) => {
             const bubble =
               "inline-block w-fit px-3 py-2 rounded-2xl whitespace-pre-wrap break-words text-sm";
             const mineBubble = "bg-indigo-600 text-white rounded-br-sm"; // 내 말풍선(오른쪽)
             const otherBubble = "bg-gray-100 text-gray-900 rounded-bl-sm"; // 상대 말풍선(왼쪽)
 
-            return (
-              <div
-                key={m.id}
-                className={`flex ${m.isMine ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`flex flex-col ${
-                    m.isMine ? "items-end" : "items-start"
-                  }`}
-                >
-                  <div
-                    className={`${bubble} ${
-                      m.isMine ? mineBubble : otherBubble
-                    }`}
-                    style={{ maxWidth: `${CHARS_PER_LINE}ch` }}
-                  >
-                    {m.message}
+            if (m.isMine) {
+              return (
+                <div key={m.id} className="flex justify-end">
+                  <div className="flex flex-col items-end">
+                    <div
+                      className={`${bubble} ${mineBubble}`}
+                      style={{ maxWidth: `${CHARS_PER_LINE}ch` }}
+                    >
+                      {m.message}
+                    </div>
+                    <div className="mt-1 text-[10px] text-indigo-400 text-right">
+                      {String(m.time).replace("T", " ").slice(0, 16)}
+                    </div>
                   </div>
-                  <div
-                    className={`mt-1 text-[10px] ${
-                      m.isMine
-                        ? "text-indigo-400 text-right"
-                        : "text-gray-400 text-left"
-                    }`}
-                  >
-                    {String(m.time).replace("T", " ").slice(0, 16)}
+                </div>
+              );
+            }
+
+            // 상대 메시지: 아바타(받은 URL 또는 noImage) + 말풍선 + 타임스탬프
+            return (
+              <div key={m.id} className="flex justify-start">
+                <div className="flex items-end gap-2">
+                  <img
+                    src={m.avatarUrl || noImage}
+                    alt="상대 아바타"
+                    className="w-7 h-7 rounded-full object-cover ring-[1.5px] ring-gray-300 shadow"
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.src = noImage;
+                    }}
+                  />
+                  <div className="flex flex-col items-start">
+                    <div
+                      className={`${bubble} ${otherBubble}`}
+                      style={{ maxWidth: `${CHARS_PER_LINE}ch` }}
+                    >
+                      {m.message}
+                    </div>
+                    <div className="mt-1 text-[10px] text-gray-400 text-left">
+                      {String(m.time).replace("T", " ").slice(0, 16)}
+                    </div>
                   </div>
                 </div>
               </div>
