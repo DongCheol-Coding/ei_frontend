@@ -10,12 +10,32 @@ const CHARS_PER_LINE = 32;
 export default function ChatBody({ roomId }) {
   const { connected, inbox, loading, send } = useStompChat(roomId);
 
+  const user = useSelector((s) => s.auth?.user);
+  const myAvatarUrl = user?.imageUrl ?? "";
+
   const meId = useSelector((s) => s.auth?.user?.id);
   const meEmail = useSelector((s) => s.auth?.user?.email);
 
   const [text, setText] = useState("");
   const endRef = useRef(null);
   const composingRef = useRef(false);
+
+  const pickTextAndAvatar = () => {
+    let avatarUrl = "";
+    if (typeof bodyText === "string") {
+      try {
+        const parsed = JSON.parse(bodyText);
+        if (parsed && typeof parsed === "object" && "message" in parsed) {
+          bodyText = String(parsed.message ?? "");
+          avatarUrl =
+            typeof parsed.imageUrl === "string" ? parsed.imageUrl : "";
+        }
+      } catch (_) {
+        // 그냥 일반 텍스트였던 경우 그대로 사용
+      }
+    }
+    return avatarUrl;
+  };
 
   const messages = useMemo(() => {
     return (inbox ?? []).map((m) => {
@@ -27,9 +47,12 @@ export default function ChatBody({ roomId }) {
           senderEmail &&
           String(senderEmail).toLowerCase() === String(meEmail).toLowerCase());
 
+      const avatarUrl = pickTextAndAvatar();
+
       return {
         id: m.id ?? `${m.sentAt ?? ""}-${Math.random()}`,
         message: m.message ?? "",
+        avatarUrl,
         time: (m.sentAt ?? m.createdAt ?? "").toString(),
         isMine,
       };
@@ -43,7 +66,7 @@ export default function ChatBody({ roomId }) {
   const doSend = () => {
     const t = text.trim();
     if (!t || !connected) return;
-    send(t);
+    send({ message: t, imageUrl: myAvatarUrl });
     setText("");
   };
 
