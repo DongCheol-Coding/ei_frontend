@@ -127,22 +127,21 @@ export function useStompChat(roomId, sockUrlOrBase = SOCK_URL) {
 
   // 3) 전송 (서버 @MessageMapping("chat.send")에 맞춤)
   const send = useCallback(
-    (text, imgUrl = "") => {
+    (text) => {
       const t = String(text ?? "").trim();
       if (!t) return;
       const c = clientRef.current;
       if (!c) return;
 
-      const body = JSON.stringify({ chatRoomId: roomId, message: t, imgUrl });
+      const body = JSON.stringify({ chatRoomId: roomId, message: t });
       c.publish({
-        destination: `${APP_PREFIX}/chat.send`,
+        destination: `${APP_PREFIX}/chat.send`, // ← 서버 계약대로 복원
         body,
         headers: { "content-type": "application/json;charset=UTF-8" },
       });
     },
     [roomId]
   );
-
 
   return { connected, inbox, loading, send, error };
 }

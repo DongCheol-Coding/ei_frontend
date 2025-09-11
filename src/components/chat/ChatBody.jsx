@@ -9,10 +9,8 @@ const CHARS_PER_LINE = 32;
 
 export default function ChatBody({ roomId }) {
   const { connected, inbox, loading, send } = useStompChat(roomId);
-
   const meId = useSelector((s) => s.auth?.user?.id);
   const meEmail = useSelector((s) => s.auth?.user?.email);
-  const imageUrl = useSelector((s) => s.auth?.user?.imageUrl ?? "");
 
   const [text, setText] = useState("");
   const endRef = useRef(null);
@@ -44,7 +42,7 @@ export default function ChatBody({ roomId }) {
   const doSend = () => {
     const t = text.trim();
     if (!t || !connected) return;
-    send(t, imageUrl);
+    send(t);
     setText("");
   };
 

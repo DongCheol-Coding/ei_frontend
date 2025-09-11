@@ -49,7 +49,6 @@ export default function SupportChatRoomPage() {
         message: m.message ?? "",
         time: (m.sentAt ?? m.createdAt ?? "").toString(),
         isMine,
-        imageUrl: m.imgUrl ?? "",
       };
     });
   }, [inbox, meId, meEmail]);
@@ -152,13 +151,12 @@ export default function SupportChatRoomPage() {
               );
             }
 
-            const avatarSrc = m.imageUrl ? m.imageUrl : noImage;
-
+            // 상대 메시지: 아바타(noImage) + 말풍선 + 타임스탬프
             return (
               <div key={m.id} className="flex justify-start">
                 <div className="flex items-end gap-2">
                   <img
-                    src={avatarSrc}
+                    src={noImage}
                     alt="상대 아바타"
                     className="w-7 h-7 rounded-full object-cover ring-[1.5px] ring-gray-300 shadow"
                     loading="lazy"
